@@ -6,6 +6,7 @@ import (
 	"database/sql"
 	"fmt"
 	"github.com/DATA-DOG/go-sqlmock"
+	"github.com/mailru/go-clickhouse"
 	"github.com/stretchr/testify/assert"
 	"testing"
 	"time"
@@ -41,7 +42,7 @@ func TestInsert_ShouldInsertNewRecordToDb_NoError(t *testing.T) {
 			app.DeveloperId,
 			app.Developer,
 			app.Geo,
-			app.StartAt,
+			clickhouse.Date(app.StartAt),
 			app.Period,
 		).WillReturnResult(sqlmock.NewErrorResult(nil))
 
@@ -64,7 +65,7 @@ func TestGet_ShouldGetValueFromDbByBundle_NoError(t *testing.T) {
 					app.DeveloperId,
 					app.Developer,
 					app.Geo,
-					app.StartAt,
+					clickhouse.Date(app.StartAt),
 					app.Period,
 				),
 		)
@@ -94,4 +95,29 @@ func TestGet_ShouldReturnNoRowInDbError_NoError(t *testing.T) {
 	a, ok := aIn.(db.App)
 	assert.False(t, ok)
 	assert.Empty(t, a.Bundle)
+}
+
+func TestInsertTx_ShouldInsertNewRowInTx_NoError(t *testing.T) {
+	sqlDb, mock := MockDb()
+
+	app := NewApp()
+	mock.ExpectBegin()
+	mock.ExpectExec("^insert into app_tracking values \\(\\?, \\?, \\?, \\?, \\?, \\?, \\?\\)$").
+		WithArgs(
+			app.Bundle,
+			app.Category,
+			app.DeveloperId,
+			app.Developer,
+			app.Geo,
+			clickhouse.Date(app.StartAt),
+			app.Period,
+		).
+		WillReturnResult(sqlmock.NewErrorResult(nil))
+	mock.ExpectCommit()
+
+	repo := db.NewAppTracking(sqlDb)
+	tx, _ := sqlDb.Begin()
+	assert.NoError(t, repo.InsertTx(tx, context.Background(), app))
+	assert.NoError(t, tx.Commit())
+	assert.NoError(t, mock.ExpectationsWereMet())
 }

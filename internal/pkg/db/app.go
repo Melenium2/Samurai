@@ -28,6 +28,23 @@ func (a *appTable) Insert(ctx context.Context, data interface{}) error {
 	return nil
 }
 
+func (a *appTable) InsertTx(tx *sql.Tx, ctx context.Context, data interface{}) error {
+	app, ok := data.(App)
+	if !ok {
+		return ErrWrongDataType
+	}
+	_, err := tx.ExecContext(
+		ctx,
+		fmt.Sprint("insert into app_tracking values (?, ?, ?, ?, ?, ?, ?)"),
+		app.Bundle, app.Category, app.DeveloperId, app.Developer, app.Geo, clickhouse.Date(app.StartAt), app.Period,
+	)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (a *appTable) Get(ctx context.Context, value interface{}) (interface{}, error) {
 	bundle, ok := value.(string)
 	if !ok {

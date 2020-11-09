@@ -73,3 +73,44 @@ func TestInsert_ShouldCreateNewMetaRecordInDatabase_NoError(t *testing.T) {
 	tracking := db.NewMetaTracking(sqlDb)
 	assert.NoError(t, tracking.Insert(context.Background(), info))
 }
+
+func TestInsertTx_ShouldCreateNewMetaRecordInDatabase_NoError(t *testing.T) {
+	sqlDb, mock := MockDb()
+
+	info := NewMeta()
+
+	mock.ExpectBegin()
+	mock.ExpectExec("^insert into meta_tracking values \\(\\?, \\?, \\?, \\?, \\?, \\?, \\?, \\?, \\?, \\?, \\?, \\?, \\?, \\?, \\?, \\?, \\?, \\?, \\?, \\?, \\?\\)$").
+		WithArgs(
+			info.Bundle,
+			info.Title,
+			info.Price,
+			info.Picture,
+			clickhouse.Array(info.Screenshots),
+			info.Rating,
+			info.ReviewCount,
+			clickhouse.Array(info.RatingHistogram),
+			info.Description,
+			info.ShortDescription,
+			info.RecentChanges,
+			info.ReleaseDate,
+			info.LastUpdateDate,
+			info.AppSize,
+			info.Installs,
+			info.Version,
+			info.AndroidVersion,
+			info.ContentRating,
+			clickhouse.Array([]string{info.DeveloperContacts.Email}),
+			clickhouse.Array([]string{info.DeveloperContacts.Contacts}),
+			info.PrivacyPolicy,
+			clickhouse.Date(info.Date),
+		).
+		WillReturnResult(sqlmock.NewErrorResult(nil))
+	mock.ExpectCommit()
+
+	tracking := db.NewMetaTracking(sqlDb)
+	tx, _ := sqlDb.Begin()
+	assert.NoError(t, tracking.InsertTx(tx, context.Background(), info))
+	assert.NoError(t, tx.Commit())
+	assert.NoError(t, mock.ExpectationsWereMet())
+}

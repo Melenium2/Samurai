@@ -1,23 +1,19 @@
 package db
 
 import (
+	"Samurai/config"
 	"context"
 	"database/sql"
 	"fmt"
 	"strings"
 )
 
-// TODO **DATABASE**
-//	Entities
-//		app (bundle, category, developerId, developerName, geo for tracking, start_date, how much time track app (days))
-//		meta(bundle, .....)
-//		TrackByKeywords(bundle, keyword, date, place(1-250)/or none)
-//		TrackByCategory(bundle, category, date, place(1-500)/or none)
 
 var ErrWrongDataType = fmt.Errorf("wrong data type")
 
 type Inserter interface {
 	Insert(ctx context.Context, data interface{}) error
+	InsertTx(tx *sql.Tx, ctx context.Context,  data interface{}) error
 }
 
 type Getter interface {
@@ -53,13 +49,44 @@ func (t *TrackingDatabase) Insert(ctx context.Context, data interface{}) error {
 	return ErrWrongDataType
 }
 
-func NewWithConnection(db *sql.DB) *TrackingDatabase {
-	return &TrackingDatabase{
-		app:      NewAppTracking(db),
-		meta:     NewMetaTracking(db),
-		keywords: NewKeywordsTracking(db),
-		category: NewCategoryTracking(db),
+func (t *TrackingDatabase) InsertTx(tx *sql.Tx, ctx context.Context,  data interface{}) error {
+	switch v := data.(type) {
+	case App:
+		return t.app.InsertTx(tx, ctx, v)
+	case Meta:
+		return t.meta.InsertTx(tx, ctx, v)
+	case Track:
+		splited := strings.Split(v.Type, "_")
+		if len(splited) >= 2 {
+			return t.category.InsertTx(tx, ctx, v)
+		}
+
+		return t.keywords.InsertTx(tx, ctx, v)
 	}
+
+	return ErrWrongDataType
+}
+
+func NewWithConfig(config config.DBConfig) *TrackingDatabase {
+	url, err := ConnectionUrl(config)
+	if err != nil {
+		panic(err)
+	}
+	conn, err := Connect(url, "clickhouse")
+	if err != nil {
+		panic(err)
+	}
+
+	return NewWithConnection(conn)
+}
+
+func NewWithConnection(db *sql.DB) *TrackingDatabase {
+	return New(
+		NewAppTracking(db),
+		NewMetaTracking(db),
+		NewKeywordsTracking(db),
+		NewCategoryTracking(db),
+	)
 }
 
 func New(app Getter, meta Inserter, keys Inserter, cats Inserter) *TrackingDatabase {
