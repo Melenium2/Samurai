@@ -12,8 +12,8 @@ import (
 var ErrWrongDataType = fmt.Errorf("wrong data type")
 
 type Inserter interface {
-	Insert(ctx context.Context, data interface{}) error
-	InsertTx(tx pgx.Tx, ctx context.Context,  data interface{}) error
+	Insert(ctx context.Context, data interface{}) (int, error)
+	InsertTx(tx pgx.Tx, ctx context.Context,  data interface{}) (int, error)
 }
 
 type Getter interface {
@@ -31,7 +31,7 @@ type TrackingDatabase struct {
 	category Inserter
 }
 
-func (t *TrackingDatabase) Insert(ctx context.Context, data interface{}) error {
+func (t *TrackingDatabase) Insert(ctx context.Context, data interface{}) (int, error) {
 	switch v := data.(type) {
 	case App:
 		return t.app.Insert(ctx, v)
@@ -46,10 +46,10 @@ func (t *TrackingDatabase) Insert(ctx context.Context, data interface{}) error {
 		return t.keywords.Insert(ctx, v)
 	}
 
-	return ErrWrongDataType
+	return 0, ErrWrongDataType
 }
 
-func (t *TrackingDatabase) InsertTx(tx pgx.Tx, ctx context.Context,  data interface{}) error {
+func (t *TrackingDatabase) InsertTx(tx pgx.Tx, ctx context.Context, data interface{}) (int, error) {
 	switch v := data.(type) {
 	case App:
 		return t.app.InsertTx(tx, ctx, v)
@@ -64,7 +64,7 @@ func (t *TrackingDatabase) InsertTx(tx pgx.Tx, ctx context.Context,  data interf
 		return t.keywords.InsertTx(tx, ctx, v)
 	}
 
-	return ErrWrongDataType
+	return 0, ErrWrongDataType
 }
 
 func NewWithConfig(config config.DBConfig) *TrackingDatabase {

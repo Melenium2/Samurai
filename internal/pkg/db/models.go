@@ -43,11 +43,11 @@ type Meta struct {
 }
 
 type Track struct {
-	Id     int       `json:"-"`
-	Bundle string    `json:"bundle,omitempty"`
-	Type   string    `json:"type,omitempty"`
-	Date   time.Time `json:"date,omitempty"`
-	Place  int32     `json:"place,omitempty"`
+	Id       int       `json:"-"`
+	BundleId int       `json:"bundle,omitempty"`
+	Type     string    `json:"type,omitempty"`
+	Date     time.Time `json:"date,omitempty"`
+	Place    int32     `json:"place,omitempty"`
 }
 
 type DeveloperContacts struct {

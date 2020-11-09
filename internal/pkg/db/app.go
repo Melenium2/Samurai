@@ -15,39 +15,45 @@ type appTable struct {
 
 // Insert App struct to table. Method create transaction and then commit results.
 // In order not to repeat the logic of InsertTx method
-func (a *appTable) Insert(ctx context.Context, data interface{}) error {
+func (a *appTable) Insert(ctx context.Context, data interface{}) (int, error) {
 	tx, err := a.db.Begin(ctx)
 	if err != nil {
-		return err
+		return 0, err
 	}
 	defer tx.Rollback(ctx)
 
-	err = a.InsertTx(tx, ctx, data)
+	id, err := a.InsertTx(tx, ctx, data)
 	if err != nil {
-		return err
+		return 0, err
 	}
 
-	return tx.Commit(ctx)
+	err = tx.Commit(ctx)
+	if err != nil {
+		return 0, err
+	}
+
+	return id, nil
 }
 
 
 // Method get transaction status from param and execute insert method.
 // If errors not presented return no error
-func (a *appTable) InsertTx(tx pgx.Tx, ctx context.Context, data interface{}) error {
+func (a *appTable) InsertTx(tx pgx.Tx, ctx context.Context, data interface{}) (int, error) {
 	app, ok := data.(App)
 	if !ok {
-		return ErrWrongDataType
+		return 0, ErrWrongDataType
 	}
-	_, err := tx.Exec(
+	row := tx.QueryRow(
 		ctx,
-		fmt.Sprint("insert into app_tracking (bundle, category, developerId, developer, geo, startAt, period)  values ($1, $2, $3, $4, $5, $6, $7)"),
+		fmt.Sprint("insert into app_tracking (bundle, category, developerId, developer, geo, startAt, period)  values ($1, $2, $3, $4, $5, $6, $7) returning id"),
 		app.Bundle, app.Category, app.DeveloperId, app.Developer, app.Geo, app.StartAt, app.Period,
 	)
-	if err != nil {
-		return err
+	var id int
+	if err := row.Scan(&id); err != nil {
+		return 0, err
 	}
 
-	return nil
+	return id, nil
 }
 
 

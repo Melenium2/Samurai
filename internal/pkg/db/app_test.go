@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"github.com/jackc/pgx/v4"
 	"github.com/stretchr/testify/assert"
+	"strings"
 	"testing"
 	"time"
 )
@@ -28,8 +29,9 @@ func RealDb() (*pgx.Conn, func(names ...string)) {
 	}
 
 	return conn, func(names ...string) {
-		for _, v := range names {
-			conn.Exec(context.Background(), fmt.Sprintf("truncate table %s", v))
+		_, err := conn.Exec(context.Background(), fmt.Sprintf("truncate table %s CASCADE", strings.Join(names, ",")))
+		if err != nil {
+			panic(err)
 		}
 	}
 }
@@ -55,7 +57,8 @@ func TestAppTableInsert_ShouldInsertRowWithoutError_NoError(t *testing.T) {
 
 	app := NewApp()
 
-	assert.NoError(t, repo.Insert(context.Background(), app))
+	_, err := repo.Insert(context.Background(), app)
+	assert.NoError(t, err)
 }
 
 func TestAppTableGet_ShouldGetLastInsertedRow_NoError(t *testing.T) {
@@ -66,7 +69,8 @@ func TestAppTableGet_ShouldGetLastInsertedRow_NoError(t *testing.T) {
 	app := NewApp()
 	app.Bundle = "super.bundle.for.test"
 
-	assert.NoError(t, repo.Insert(context.Background(), app))
+	_, err := repo.Insert(context.Background(), app)
+	assert.NoError(t, err)
 	res, err := repo.Get(context.Background(), "super.bundle.for.test")
 	assert.NoError(t, err)
 	assert.NotNil(t, res)
@@ -98,7 +102,9 @@ func TestAppTableInsertTx_ShouldInsertRowWithoutError_NoError(t *testing.T) {
 
 	ctx := context.Background()
 	tx, _ := conn.Begin(ctx)
-	assert.NoError(t, repo.InsertTx(tx, ctx, app))
+
+	_, err := repo.InsertTx(tx, ctx, app)
+	assert.NoError(t, err)
 	assert.NoError(t, tx.Commit(ctx))
 }
 
@@ -114,9 +120,12 @@ func TestAppTableInsertTx_ShouldInsertSomeRows_NoError(t *testing.T) {
 	sql := "select count(*) from app_tracking"
 
 	tx, _ := conn.Begin(ctx)
-	assert.NoError(t, repo.InsertTx(tx, ctx, app))
-	assert.NoError(t, repo.InsertTx(tx, ctx, app))
-	assert.NoError(t, repo.InsertTx(tx, ctx, app))
+	_, err := repo.InsertTx(tx, ctx, app)
+	assert.NoError(t, err)
+	_, err = repo.InsertTx(tx, ctx, app)
+	assert.NoError(t, err)
+	_, err = repo.InsertTx(tx, ctx, app)
+	assert.NoError(t, err)
 	assert.NoError(t, tx.Commit(ctx))
 
 	conn.QueryRow(context.Background(), sql).Scan(&num)
