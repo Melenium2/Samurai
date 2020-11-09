@@ -1,10 +1,13 @@
 package db
 
 import (
+	"fmt"
+	"github.com/jackc/pgtype"
 	"time"
 )
 
 type App struct {
+	Id          int       `json:"-"`
 	Bundle      string    `json:"bundle,omitempty"`
 	Category    string    `json:"category,omitempty"`
 	DeveloperId string    `json:"developer_id,omitempty"`
@@ -15,6 +18,7 @@ type App struct {
 }
 
 type Meta struct {
+	Id                int               `json:"-"`
 	Bundle            string            `json:"bundle" db:"bundle"`
 	Title             string            `json:"title" db:"title"`
 	Price             string            `json:"price" db:"price"`
@@ -39,6 +43,7 @@ type Meta struct {
 }
 
 type Track struct {
+	Id     int       `json:"-"`
 	Bundle string    `json:"bundle,omitempty"`
 	Type   string    `json:"type,omitempty"`
 	Date   time.Time `json:"date,omitempty"`
@@ -48,4 +53,33 @@ type Track struct {
 type DeveloperContacts struct {
 	Email    string `json:"email,omitempty"`
 	Contacts string `json:"contacts,omitempty"`
+}
+
+func (dest *DeveloperContacts) DecodeBinary(ci *pgtype.ConnInfo, src []byte) error {
+	if src == nil {
+		return fmt.Errorf("NULL values can't be decoded. Scan into a &*MyType to handle NULLs")
+	}
+
+	if err := (pgtype.CompositeFields{&dest.Email, &dest.Contacts}).DecodeBinary(ci, src); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (src DeveloperContacts) EncodeBinary(ci *pgtype.ConnInfo, buf []byte) (newBuf []byte, err error) {
+	var email pgtype.Text
+	if src.Email != "" {
+		email = pgtype.Text{String: src.Email, Status: pgtype.Present}
+	} else {
+		email = pgtype.Text{Status: pgtype.Null}
+	}
+	var contacts pgtype.Text
+	if src.Contacts != "" {
+		email = pgtype.Text{String: src.Contacts, Status: pgtype.Present}
+	} else {
+		email = pgtype.Text{Status: pgtype.Null}
+	}
+
+	return (pgtype.CompositeFields{email, contacts}).EncodeBinary(ci, buf)
 }

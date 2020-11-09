@@ -2,13 +2,12 @@ package db
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
-	"github.com/mailru/go-clickhouse"
+	"github.com/jackc/pgx/v4"
 )
 
 type categoryTable struct {
-	db *sql.DB
+	db *pgx.Conn
 }
 
 
@@ -18,13 +17,13 @@ func (k *categoryTable) Insert(ctx context.Context, data interface{}) error {
 		return ErrWrongDataType
 	}
 
-	_, err := k.db.ExecContext(
+	_, err := k.db.Exec(
 		ctx,
-		fmt.Sprint("insert into category_tracking values (?, ?, ?, ?)"),
+		fmt.Sprint("insert into category_tracking values ($1, $2, $3, $4)"),
 		track.Bundle,
 		track.Type,
 		track.Place,
-		clickhouse.Date(track.Date),
+		track.Date,
 	)
 	if err != nil {
 		return err
@@ -33,19 +32,19 @@ func (k *categoryTable) Insert(ctx context.Context, data interface{}) error {
 	return nil
 }
 
-func (k *categoryTable) InsertTx(tx *sql.Tx, ctx context.Context, data interface{}) error {
+func (k *categoryTable) InsertTx(tx pgx.Tx, ctx context.Context, data interface{}) error {
 	track, ok := data.(Track)
 	if !ok {
 		return ErrWrongDataType
 	}
 
-	_, err := tx.ExecContext(
+	_, err := tx.Exec(
 		ctx,
-		fmt.Sprint("insert into category_tracking values (?, ?, ?, ?)"),
+		fmt.Sprint("insert into category_tracking values ($1, $2, $3, $4)"),
 		track.Bundle,
 		track.Type,
 		track.Place,
-		clickhouse.Date(track.Date),
+		track.Date,
 	)
 	if err != nil {
 		return err
@@ -54,7 +53,7 @@ func (k *categoryTable) InsertTx(tx *sql.Tx, ctx context.Context, data interface
 	return nil
 }
 
-func NewCategoryTracking(db *sql.DB) *categoryTable {
+func NewCategoryTracking(db *pgx.Conn) *categoryTable {
 	return &categoryTable{
 		db: db,
 	}

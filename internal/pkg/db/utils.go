@@ -2,15 +2,15 @@ package db
 
 import (
 	"Samurai/config"
-	"database/sql"
+	"context"
 	"errors"
+	"github.com/jackc/pgx/v4"
 	"io/ioutil"
 	"strings"
-	"time"
 )
 
 func ConnectionUrl(config config.DBConfig) (string, error) {
-	url := "http://"
+	url := "postgresql://"
 
 	if config.User != "" && config.Password != "" {
 		url += config.User + ":" + config.Password + "@"
@@ -35,23 +35,16 @@ func ConnectionUrl(config config.DBConfig) (string, error) {
 	return url, nil
 }
 
-func Connect(url, drivername string) (*sql.DB, error) {
-	connect, err := sql.Open(drivername, url)
+func Connect(url string) (*pgx.Conn, error) {
+	connect, err := pgx.Connect(context.Background(), url)
 	if err != nil {
 		return nil, err
 	}
 
-	if err := connect.Ping(); err != nil {
-		return nil, err
-	}
-
-	connect.SetConnMaxLifetime(time.Second * 30)
-	connect.SetMaxOpenConns(10)
-
 	return connect, nil
 }
 
-func InitSchema(connection *sql.DB, schemafile string) error {
+func InitSchema(connection *pgx.Conn, schemafile string) error {
 	b, err := ioutil.ReadFile(schemafile)
 	if err != nil {
 		return err
@@ -59,12 +52,13 @@ func InitSchema(connection *sql.DB, schemafile string) error {
 	schema := string(b)
 	tables := strings.Split(schema, ";\n")
 
+	ctx := context.Background()
 	for _, v := range tables {
-		_, err = connection.Exec(v)
+		_, err = connection.Exec(ctx, v)
 		if err != nil {
 			if strings.Contains(err.Error(), "Code: 57") {
 				newsql := strings.ReplaceAll(v,"CREATE TABLE", "ATTACH TABLE")
-				if _, err = connection.Exec(newsql); err != nil {
+				if _, err = connection.Exec(ctx, newsql); err != nil {
 					return err
 				}
 			} else {

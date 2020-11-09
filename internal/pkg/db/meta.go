@@ -2,13 +2,12 @@ package db
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
-	"github.com/mailru/go-clickhouse"
+	"github.com/jackc/pgx/v4"
 )
 
 type metaTable struct {
-	db *sql.DB
+	db *pgx.Conn
 }
 
 
@@ -17,17 +16,17 @@ func (m *metaTable) Insert(ctx context.Context, data interface{}) error {
 	if !ok {
 		return ErrWrongDataType
 	}
-	_, err := m.db.ExecContext(
+	_, err := m.db.Exec(
 		ctx,
-		fmt.Sprint("insert into meta_tracking values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"),
+		fmt.Sprint("insert into meta_tracking values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18:developercontacts, $19, $20)"),
 		info.Bundle,
 		info.Title,
 		info.Price,
 		info.Picture,
-		clickhouse.Array(info.Screenshots),
+		info.Screenshots,
 		info.Rating,
 		info.ReviewCount,
-		clickhouse.Array(info.RatingHistogram),
+		info.RatingHistogram,
 		info.Description,
 		info.ShortDescription,
 		info.RecentChanges,
@@ -38,10 +37,9 @@ func (m *metaTable) Insert(ctx context.Context, data interface{}) error {
 		info.Version,
 		info.AndroidVersion,
 		info.ContentRating,
-		clickhouse.Array([]string{ info.DeveloperContacts.Email }),
-		clickhouse.Array([]string{ info.DeveloperContacts.Contacts }),
+		info.DeveloperContacts,
 		info.PrivacyPolicy,
-		clickhouse.Date(info.Date),
+		info.Date,
 	)
 
 	if err != nil {
@@ -51,22 +49,23 @@ func (m *metaTable) Insert(ctx context.Context, data interface{}) error {
 	return nil
 }
 
-func (m *metaTable) InsertTx(tx *sql.Tx, ctx context.Context, data interface{}) error {
+func (m *metaTable) InsertTx(tx pgx.Tx, ctx context.Context, data interface{}) error {
 	info, ok := data.(Meta)
 	if !ok {
 		return ErrWrongDataType
 	}
-	_, err := tx.ExecContext(
+
+	_, err := tx.Exec(
 		ctx,
-		fmt.Sprint("insert into meta_tracking values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"),
+		fmt.Sprint("insert into meta_tracking values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18:developercontacts, $19, $20)"),
 		info.Bundle,
 		info.Title,
 		info.Price,
 		info.Picture,
-		clickhouse.Array(info.Screenshots),
+		info.Screenshots,
 		info.Rating,
 		info.ReviewCount,
-		clickhouse.Array(info.RatingHistogram),
+		info.RatingHistogram,
 		info.Description,
 		info.ShortDescription,
 		info.RecentChanges,
@@ -77,10 +76,9 @@ func (m *metaTable) InsertTx(tx *sql.Tx, ctx context.Context, data interface{}) 
 		info.Version,
 		info.AndroidVersion,
 		info.ContentRating,
-		clickhouse.Array([]string{ info.DeveloperContacts.Email }),
-		clickhouse.Array([]string{ info.DeveloperContacts.Contacts }),
+		info.DeveloperContacts,
 		info.PrivacyPolicy,
-		clickhouse.Date(info.Date),
+		info.Date,
 	)
 
 	if err != nil {
@@ -90,7 +88,7 @@ func (m *metaTable) InsertTx(tx *sql.Tx, ctx context.Context, data interface{}) 
 	return nil
 }
 
-func NewMetaTracking(db *sql.DB) *metaTable {
+func NewMetaTracking(db *pgx.Conn) *metaTable {
 	return &metaTable{
 		db: db,
 	}

@@ -1,21 +1,37 @@
 package db_test
 
 import (
+	"Samurai/config"
 	"Samurai/internal/pkg/db"
 	"context"
-	"database/sql"
 	"fmt"
-	"github.com/DATA-DOG/go-sqlmock"
-	"github.com/mailru/go-clickhouse"
+	"github.com/jackc/pgx/v4"
 	"github.com/stretchr/testify/assert"
 	"testing"
 	"time"
 )
 
-func MockDb() (*sql.DB, sqlmock.Sqlmock) {
-	db, m, _ := sqlmock.New()
+func RealDb() (*pgx.Conn, func(names ...string)) {
+	c := config.New()
+	url, err := db.ConnectionUrl(c.Database)
+	if err != nil {
+		panic(err)
+	}
 
-	return db, m
+	conn, err := pgx.Connect(context.Background(), url)
+	if err != nil {
+		panic(err)
+	}
+
+	if err := db.InitSchema(conn, "../../../config/schema.sql"); err != nil {
+		panic(err)
+	}
+
+	return conn, func(names ...string) {
+		for _, v := range names {
+			conn.Exec(context.Background(), fmt.Sprintf("truncate table %s", v))
+		}
+	}
 }
 
 func NewApp() db.App {
@@ -31,93 +47,78 @@ func NewApp() db.App {
 	}
 }
 
-func TestInsert_ShouldInsertNewRecordToDb_NoError(t *testing.T) {
-	sqlDb, mock := MockDb()
+func TestAppTableInsert_ShouldInsertRowWithoutError_NoError(t *testing.T) {
+	conn, cleaner := RealDb()
+	defer cleaner("app_tracking")
+
+	repo := db.NewAppTracking(conn)
 
 	app := NewApp()
-	mock.ExpectExec("^insert into app_tracking values \\(\\?, \\?, \\?, \\?, \\?, \\?, \\?\\)$").
-		WithArgs(
-			app.Bundle,
-			app.Category,
-			app.DeveloperId,
-			app.Developer,
-			app.Geo,
-			clickhouse.Date(app.StartAt),
-			app.Period,
-		).WillReturnResult(sqlmock.NewErrorResult(nil))
 
-	tracking := db.NewAppTracking(sqlDb)
-	assert.NoError(t, tracking.Insert(context.Background(), app))
-	assert.NoError(t, mock.ExpectationsWereMet())
+	assert.NoError(t, repo.Insert(context.Background(), app))
 }
 
-func TestGet_ShouldGetValueFromDbByBundle_NoError(t *testing.T) {
-	sqlDb, mock := MockDb()
+func TestAppTableGet_ShouldGetLastInsertedRow_NoError(t *testing.T) {
+	conn, cleaner := RealDb()
+	defer cleaner("app_tracking")
 
+	repo := db.NewAppTracking(conn)
 	app := NewApp()
-	mock.ExpectQuery("^select \\* from app_tracking where bundle = \\$1$").
-		WithArgs("com.bundle.go").
-		WillReturnRows(
-			sqlmock.NewRows([]string{"bundle", "category", "developerId", "developer", "geo", "startAt", "period"}).
-				AddRow(
-					app.Bundle,
-					app.Category,
-					app.DeveloperId,
-					app.Developer,
-					app.Geo,
-					clickhouse.Date(app.StartAt),
-					app.Period,
-				),
-		)
+	app.Bundle = "super.bundle.for.test"
 
-	traking := db.NewAppTracking(sqlDb)
-	aIn, err := traking.Get(context.Background(), "com.bundle.go")
+	assert.NoError(t, repo.Insert(context.Background(), app))
+	res, err := repo.Get(context.Background(), "super.bundle.for.test")
 	assert.NoError(t, err)
-	assert.NotNil(t, aIn)
-
-	a, ok := aIn.(db.App)
+	assert.NotNil(t, res)
+	a, ok := res.(db.App)
 	assert.True(t, ok)
 	assert.Equal(t, app.Bundle, a.Bundle)
 }
 
-func TestGet_ShouldReturnNoRowInDbError_NoError(t *testing.T) {
-	sqlDb, mock := MockDb()
+func TestAppTableGet_ShouldReturnErrorCozEmptyTable_Error(t *testing.T) {
+	conn, cleaner := RealDb()
+	defer cleaner("app_tracking")
 
-	mock.ExpectQuery("^select \\* from app_tracking where bundle = \\$1$").
-		WithArgs("com.bundle.go123").
-		WillReturnRows(sqlmock.NewRows([]string{})).
-		WillReturnError(fmt.Errorf(""))
+	repo := db.NewAppTracking(conn)
+	app := NewApp()
+	app.Bundle = "super.bundle.for.test"
 
-	traking := db.NewAppTracking(sqlDb)
-	aIn, err := traking.Get(context.Background(), "com.bundle.go123")
+	res, err := repo.Get(context.Background(), "super.bundle.for.test")
 	assert.Error(t, err)
-
-	a, ok := aIn.(db.App)
-	assert.False(t, ok)
-	assert.Empty(t, a.Bundle)
+	assert.Nil(t, res)
 }
 
-func TestInsertTx_ShouldInsertNewRowInTx_NoError(t *testing.T) {
-	sqlDb, mock := MockDb()
+func TestAppTableInsertTx_ShouldInsertRowWithoutError_NoError(t *testing.T) {
+	conn, cleaner := RealDb()
+	defer cleaner("app_tracking")
+
+	repo := db.NewAppTracking(conn)
 
 	app := NewApp()
-	mock.ExpectBegin()
-	mock.ExpectExec("^insert into app_tracking values \\(\\?, \\?, \\?, \\?, \\?, \\?, \\?\\)$").
-		WithArgs(
-			app.Bundle,
-			app.Category,
-			app.DeveloperId,
-			app.Developer,
-			app.Geo,
-			clickhouse.Date(app.StartAt),
-			app.Period,
-		).
-		WillReturnResult(sqlmock.NewErrorResult(nil))
-	mock.ExpectCommit()
 
-	repo := db.NewAppTracking(sqlDb)
-	tx, _ := sqlDb.Begin()
-	assert.NoError(t, repo.InsertTx(tx, context.Background(), app))
-	assert.NoError(t, tx.Commit())
-	assert.NoError(t, mock.ExpectationsWereMet())
+	ctx := context.Background()
+	tx, _ := conn.Begin(ctx)
+	assert.NoError(t, repo.InsertTx(tx, ctx, app))
+	assert.NoError(t, tx.Commit(ctx))
+}
+
+func TestAppTableInsertTx_ShouldInsertSomeRows_NoError(t *testing.T) {
+	conn, cleaner := RealDb()
+	defer cleaner("app_tracking")
+
+	repo := db.NewAppTracking(conn)
+
+	app := NewApp()
+	ctx := context.Background()
+	var num int
+	sql := "select count(*) from app_tracking"
+
+	tx, _ := conn.Begin(ctx)
+	assert.NoError(t, repo.InsertTx(tx, ctx, app))
+	assert.NoError(t, repo.InsertTx(tx, ctx, app))
+	assert.NoError(t, repo.InsertTx(tx, ctx, app))
+	assert.NoError(t, tx.Commit(ctx))
+
+	conn.QueryRow(context.Background(), sql).Scan(&num)
+	assert.Equal(t, 3, num)
 }

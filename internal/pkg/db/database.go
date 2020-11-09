@@ -3,8 +3,8 @@ package db
 import (
 	"Samurai/config"
 	"context"
-	"database/sql"
 	"fmt"
+	"github.com/jackc/pgx/v4"
 	"strings"
 )
 
@@ -13,7 +13,7 @@ var ErrWrongDataType = fmt.Errorf("wrong data type")
 
 type Inserter interface {
 	Insert(ctx context.Context, data interface{}) error
-	InsertTx(tx *sql.Tx, ctx context.Context,  data interface{}) error
+	InsertTx(tx pgx.Tx, ctx context.Context,  data interface{}) error
 }
 
 type Getter interface {
@@ -49,7 +49,7 @@ func (t *TrackingDatabase) Insert(ctx context.Context, data interface{}) error {
 	return ErrWrongDataType
 }
 
-func (t *TrackingDatabase) InsertTx(tx *sql.Tx, ctx context.Context,  data interface{}) error {
+func (t *TrackingDatabase) InsertTx(tx pgx.Tx, ctx context.Context,  data interface{}) error {
 	switch v := data.(type) {
 	case App:
 		return t.app.InsertTx(tx, ctx, v)
@@ -72,7 +72,7 @@ func NewWithConfig(config config.DBConfig) *TrackingDatabase {
 	if err != nil {
 		panic(err)
 	}
-	conn, err := Connect(url, "clickhouse")
+	conn, err := Connect(url)
 	if err != nil {
 		panic(err)
 	}
@@ -80,7 +80,7 @@ func NewWithConfig(config config.DBConfig) *TrackingDatabase {
 	return NewWithConnection(conn)
 }
 
-func NewWithConnection(db *sql.DB) *TrackingDatabase {
+func NewWithConnection(db *pgx.Conn) *TrackingDatabase {
 	return New(
 		NewAppTracking(db),
 		NewMetaTracking(db),

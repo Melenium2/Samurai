@@ -1,7 +1,7 @@
 package config
 
 import (
-	"database/sql"
+	"github.com/jackc/pgx/v4"
 	"gopkg.in/yaml.v3"
 	"io/ioutil"
 	"log"
@@ -16,7 +16,7 @@ type DBConfig struct {
 	Address    string `yaml:"address"`
 	Port       string `yaml:"port"`
 	Schema     string `yaml:"schema"`
-	Connection *sql.DB
+	Connection *pgx.Conn
 }
 
 //Application config
