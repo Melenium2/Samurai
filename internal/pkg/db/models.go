@@ -19,7 +19,7 @@ type App struct {
 
 type Meta struct {
 	Id                int               `json:"-"`
-	Bundle            string            `json:"bundle" db:"bundle"`
+	BundleId          int               `json:"-"`
 	Title             string            `json:"title" db:"title"`
 	Price             string            `json:"price" db:"price"`
 	Picture           string            `json:"picture" db:"picture"`
@@ -57,7 +57,7 @@ type DeveloperContacts struct {
 
 func (dest *DeveloperContacts) DecodeBinary(ci *pgtype.ConnInfo, src []byte) error {
 	if src == nil {
-		return fmt.Errorf("NULL values can't be decoded. Scan into a &*MyType to handle NULLs")
+		return fmt.Errorf("NULL values can't be decoded. Scan into a &*DeveloperContacts to handle NULLs")
 	}
 
 	if err := (pgtype.CompositeFields{&dest.Email, &dest.Contacts}).DecodeBinary(ci, src); err != nil {
@@ -68,18 +68,8 @@ func (dest *DeveloperContacts) DecodeBinary(ci *pgtype.ConnInfo, src []byte) err
 }
 
 func (src DeveloperContacts) EncodeBinary(ci *pgtype.ConnInfo, buf []byte) (newBuf []byte, err error) {
-	var email pgtype.Text
-	if src.Email != "" {
-		email = pgtype.Text{String: src.Email, Status: pgtype.Present}
-	} else {
-		email = pgtype.Text{Status: pgtype.Null}
-	}
-	var contacts pgtype.Text
-	if src.Contacts != "" {
-		email = pgtype.Text{String: src.Contacts, Status: pgtype.Present}
-	} else {
-		email = pgtype.Text{Status: pgtype.Null}
-	}
+	email := pgtype.Text{String: src.Email, Status: pgtype.Present}
+	contacts := pgtype.Text{String: src.Contacts, Status: pgtype.Present}
 
-	return (pgtype.CompositeFields{email, contacts}).EncodeBinary(ci, buf)
+	return (pgtype.CompositeFields{&email, &contacts}).EncodeBinary(ci, buf)
 }

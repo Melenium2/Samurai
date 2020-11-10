@@ -36,10 +36,15 @@ func (m *metaTable) InsertTx(tx pgx.Tx, ctx context.Context, data interface{}) (
 		return 0, ErrWrongDataType
 	}
 
+	values := "(bundleId, title, price, picture, screenshots," +
+		" rating, reviewCount, ratingHistogram, description," +
+		" shortDescription, recentChanges, releaseDate, lastUpdateDate, appSize," +
+		" installs, version, androidVersion, contentRating, devContacts," +
+		" privacyPolicy, date)"
 	row := tx.QueryRow(
 		ctx,
-		fmt.Sprint("insert into meta_tracking values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18:developercontacts, $19, $20) returning id"),
-		info.Bundle,
+		fmt.Sprintf("insert into meta_tracking %s values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19::developerContacts, $20, $21) returning id", values),
+		info.BundleId,
 		info.Title,
 		info.Price,
 		info.Picture,

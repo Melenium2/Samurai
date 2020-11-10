@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"github.com/jackc/pgx/v4"
 	"github.com/stretchr/testify/assert"
+	"log"
 	"strings"
 	"testing"
 	"time"
@@ -31,7 +32,7 @@ func RealDb() (*pgx.Conn, func(names ...string)) {
 	return conn, func(names ...string) {
 		_, err := conn.Exec(context.Background(), fmt.Sprintf("truncate table %s CASCADE", strings.Join(names, ",")))
 		if err != nil {
-			panic(err)
+			log.Print(err)
 		}
 	}
 }

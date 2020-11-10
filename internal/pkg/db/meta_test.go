@@ -2,12 +2,15 @@ package db_test
 
 import (
 	"Samurai/internal/pkg/db"
+	"context"
+	"github.com/stretchr/testify/assert"
+	"testing"
 	"time"
 )
 
 func NewMeta() db.Meta {
 	return db.Meta{
-		Bundle:           "com.bundle.go",
+		BundleId:         0,
 		Title:            "title",
 		Price:            "4.3$",
 		Picture:          "wowpiture",
@@ -32,4 +35,85 @@ func NewMeta() db.Meta {
 		PrivacyPolicy: "http://url.com",
 		Date:          time.Now(),
 	}
+}
+
+func TestMetaTableInsert_ShouldInsertNewRow_NoError(t *testing.T) {
+	conn, cleaner := RealDb()
+	defer cleaner("meta_tracking", "app_tracking")
+
+	app := NewApp()
+	meta := NewMeta()
+
+	repoApp := db.NewAppTracking(conn)
+	repoMeta := db.NewMetaTracking(conn)
+
+	id, err := repoApp.Insert(context.Background(), app)
+	assert.NoError(t, err)
+
+	meta.BundleId = id
+	_, err = repoMeta.Insert(context.Background(), meta)
+	assert.NoError(t, err)
+}
+
+func TestMetaTableInsert_ShouldInsertSomeNewRowWithOneBundleId_NoError(t *testing.T) {
+	conn, cleaner := RealDb()
+	defer cleaner("meta_tracking", "app_tracking")
+
+	app := NewApp()
+	meta := NewMeta()
+
+	repoApp := db.NewAppTracking(conn)
+	repoMeta := db.NewMetaTracking(conn)
+
+	id, err := repoApp.Insert(context.Background(), app)
+	assert.NoError(t, err)
+
+	meta.BundleId = id
+	_, err = repoMeta.Insert(context.Background(), meta)
+	assert.NoError(t, err)
+	_, err = repoMeta.Insert(context.Background(), meta)
+	assert.NoError(t, err)
+	_, err = repoMeta.Insert(context.Background(), meta)
+	assert.NoError(t, err)
+}
+
+func TestMetaTableInsertTx_ShouldInsertSomeRowsInTransaction_NoError(t *testing.T) {
+	conn, cleaner := RealDb()
+	defer cleaner("meta_tracking", "app_tracking")
+
+	app := NewApp()
+	meta := NewMeta()
+
+	repoApp := db.NewAppTracking(conn)
+	repoMeta := db.NewMetaTracking(conn)
+
+	id, err := repoApp.Insert(context.Background(), app)
+	assert.NoError(t, err)
+
+	meta.BundleId = id
+	ctx := context.Background()
+	tx, _ := conn.Begin(ctx)
+	_, err = repoMeta.InsertTx(tx, ctx, meta)
+	assert.NoError(t, err)
+	_, err = repoMeta.InsertTx(tx, ctx, meta)
+	assert.NoError(t, err)
+	_, err = repoMeta.InsertTx(tx, ctx, meta)
+	assert.NoError(t, err)
+	_, err = repoMeta.InsertTx(tx, ctx, meta)
+	assert.NoError(t, err)
+
+	assert.NoError(t, tx.Commit(ctx))
+}
+
+func TestMetaTableInsert_ShouldReturnErrorCozConnectionToDbIsOut_Error(t *testing.T) {
+	conn, _ := RealDb()
+
+	app := NewApp()
+
+	repoApp := db.NewAppTracking(conn)
+	conn.Close(context.Background())
+
+	id, err := repoApp.Insert(context.Background(), app)
+	assert.Error(t, err)
+	assert.Equal(t, 0, id)
 }

@@ -56,12 +56,7 @@ func InitSchema(connection *pgx.Conn, schemafile string) error {
 	for _, v := range tables {
 		_, err = connection.Exec(ctx, v)
 		if err != nil {
-			if strings.Contains(err.Error(), "Code: 57") {
-				newsql := strings.ReplaceAll(v,"CREATE TABLE", "ATTACH TABLE")
-				if _, err = connection.Exec(ctx, newsql); err != nil {
-					return err
-				}
-			} else {
+			if !strings.Contains(v, "create type") && !strings.Contains(err.Error(), "42710")  {
 				return err
 			}
 		}
