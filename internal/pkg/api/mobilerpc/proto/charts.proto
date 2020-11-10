@@ -1,0 +1,33 @@
+syntax = "proto3";
+
+service Guard {
+  rpc TopCharts(ChartsRequest) returns (ChartResponse) {}
+}
+
+message Account {
+  string login = 1;
+  string password = 2;
+  int64 gsfId = 3;
+  string token = 4;
+  string locale = 5;
+  Proxy proxy = 6;
+  string device = 7;
+}
+
+message Proxy {
+  string http = 1;
+  string https = 2;
+  string no = 3;
+}
+
+message ChartsRequest {
+  string cat = 1;
+  string subCat = 2;
+  Account account = 3;
+}
+
+message ChartResponse {
+  repeated string ids = 1;
+  Account account = 2;
+  int32 errCode = 3;
+}
