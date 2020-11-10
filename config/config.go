@@ -1,10 +1,8 @@
 package config
 
 import (
-	"github.com/jackc/pgx/v4"
 	"gopkg.in/yaml.v3"
 	"io/ioutil"
-	"log"
 	"os"
 )
 
@@ -16,18 +14,19 @@ type DBConfig struct {
 	Address    string `yaml:"address"`
 	Port       string `yaml:"port"`
 	Schema     string `yaml:"schema"`
-	Connection *pgx.Conn
+}
+
+// Api config
+type ApiConfig struct {
+	Url         string `yaml:"url"`
+	Key         string `yaml:"key"`
+	GrpcAddress string `yaml:"grpc_address"`
 }
 
 //Application config
 type Config struct {
-	ApiUrl    string   `yaml:"api_url"`
-	Hl        string   `yaml:"hl"`
-	Gl        string   `yaml:"gl"`
-	Database  DBConfig `yaml:"database"`
-	Key       string
-	KeysCount int
-	AppsCount int
+	Api      ApiConfig `yaml:"api"`
+	Database DBConfig  `yaml:"database"`
 
 	Envs []string `yaml:",flow"`
 }
@@ -47,7 +46,7 @@ func loadEnvs(e ...string) map[string]string {
 
 //Create new instance of app config with given path
 func New(p ...string) Config {
-	path := "../../../config/dev.yml"
+	path := "./dev.yml"
 	if len(p) > 0 {
 		path = p[0]
 	}
@@ -65,17 +64,15 @@ func New(p ...string) Config {
 	envs := loadEnvs(config.Envs...)
 
 	v, ok := envs["api_key"]
-	if !ok {
-		log.Print("Key api_key not found in sys envs")
-	} else {
-		config.Key = v
+	if ok && v != "" {
+		config.Api.Key = v
 	}
 	v, ok = envs["db_pass"]
-	if ok {
+	if ok && v != "" {
 		config.Database.Password = v
 	}
 	v, ok = envs["db_user"]
-	if ok {
+	if ok && v != "" {
 		config.Database.User = v
 	}
 
