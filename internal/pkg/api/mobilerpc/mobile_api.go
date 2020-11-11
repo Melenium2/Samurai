@@ -34,7 +34,7 @@ func (rpc *mobileRpc) Charts(ctx context.Context, chart Category) ([]string, err
 	resp, err := client.TopCharts(ctx, &charts.ChartsRequest{
 		Cat:     cat,
 		SubCat:  subcat,
-		Account: rpc.RpcAccount,
+		Account: rpc.RpcAccount.ForGrpc(),
 	})
 	if err != nil {
 		return nil, err
@@ -74,7 +74,7 @@ func (rpc *mobileRpc) MakeConnection() (*grpc.ClientConn, error) {
 func (rpc *mobileRpc) checkTokens(acc *charts.Account) {
 	if acc != nil && (rpc.RpcAccount.GsfId == 0 || rpc.RpcAccount.Token == "") {
 		rpc.RpcAccount.Token = acc.Token
-		rpc.RpcAccount.GsfId = acc.GsfId
+		rpc.RpcAccount.GsfId = int(acc.GsfId)
 	}
 }
 

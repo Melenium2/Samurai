@@ -50,7 +50,7 @@ func TestMobileRpc_Charts_NoError(t *testing.T) {
 		name            string
 		responseCode    int32
 		expectedObject  []string
-		expectedAccount charts.Account
+		expectedAccount mobilerpc.Account
 		err             bool
 	}{
 		{
@@ -62,20 +62,20 @@ func TestMobileRpc_Charts_NoError(t *testing.T) {
 			name:            "should response 1001 error from grpc and clear account settings ",
 			responseCode:    1001,
 			expectedObject:  []string{},
-			expectedAccount: charts.Account{Token: "", GsfId: 0},
+			expectedAccount: mobilerpc.Account{Token: "", GsfId: 0},
 		},
 		{
 			name:            "should return bundles",
 			responseCode:    0,
 			expectedObject:  []string{"1", "2", "3"},
-			expectedAccount: charts.Account{GsfId: 100, Token: "123"},
+			expectedAccount: mobilerpc.Account{GsfId: 100, Token: "123"},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			api := mobile_mock{
-				Config:       mobilerpc.Config{RpcAccount: &charts.Account{GsfId: 100, Token: "123"}},
+				Config:       mobilerpc.Config{RpcAccount: &mobilerpc.Account{GsfId: 100, Token: "123"}},
 				ResponseCode: tt.responseCode,
 			}
 			resp, err := api.Charts(context.Background(), mobilerpc.NewCategory("FINANCE", "apps_topselling_free"))
@@ -95,7 +95,7 @@ func TestMobileRpc_MakeConnection_ShouldEstablishConnection_NoError(t *testing.T
 	api := mobilerpc.New(mobilerpc.Config{
 		Address: "localhost",
 		Port: "1000",
-		RpcAccount: &charts.Account{
+		RpcAccount: &mobilerpc.Account{
 			Login:    "",
 			Password: "",
 			GsfId:    4024815430645318922,
@@ -114,7 +114,7 @@ func TestMobileRpc_Charts_ShouldMakeRequestAndGetResponse_NoError(t *testing.T) 
 	api := mobilerpc.New(mobilerpc.Config{
 		Address: "localhost",
 		Port: "1000",
-		RpcAccount: &charts.Account{
+		RpcAccount: &mobilerpc.Account{
 			Login:    "",
 			Password: "",
 			GsfId:    4024815430645318922,
@@ -133,7 +133,7 @@ func TestMobileRpc_Charts_ShouldGetEmptyResponse_NoError(t *testing.T) {
 	api := mobilerpc.New(mobilerpc.Config{
 		Address: "localhost",
 		Port: "1000",
-		RpcAccount: &charts.Account{
+		RpcAccount: &mobilerpc.Account{
 			Login:    "",
 			Password: "",
 			GsfId:    4024815430645318922,
@@ -152,7 +152,7 @@ func TestMobileRpc_Charts_ShouldGetErrorCode1001_NoError(t *testing.T) {
 	api := mobilerpc.New(mobilerpc.Config{
 		Address: "localhost",
 		Port: "1000",
-		RpcAccount: &charts.Account{
+		RpcAccount: &mobilerpc.Account{
 			Login:    "",
 			Password: "",
 			GsfId:    0,
@@ -173,16 +173,15 @@ func TestMobileRpc_Charts_ShouldLoginAndAddNewTokenAndId_NoError(t *testing.T) {
 	api := mobilerpc.New(mobilerpc.Config{
 		Address: "localhost",
 		Port: "1000",
-		RpcAccount: &charts.Account{
+		RpcAccount: &mobilerpc.Account{
 			Login:    "ceciliamcalistervugt93@gmail.com",
 			Password: "Hbibcxzauig",
 			GsfId:    0,
 			Token:    "",
 			Locale:   "ru_RU",
-			Proxy:    &charts.Proxy{
+			Proxy:    &mobilerpc.Proxy{
 				Http:  "http://STqthJ:2odx6V@45.132.21.233:8000",
 				Https: "https://STqthJ:2odx6V@45.132.21.233:8000",
-				No:    "",
 			},
 			Device:   "whyred",
 		},
