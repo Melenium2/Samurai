@@ -10,7 +10,7 @@ import (
 
 // Interface who provide api to external api
 type ExternalApi interface {
-	App(bundle string) (*App, error)
+	App( bundle string) (*App, error)
 	Flow(key string) ([]App, error)
 }
 

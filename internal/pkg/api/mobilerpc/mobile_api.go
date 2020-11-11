@@ -13,7 +13,6 @@ import (
 
 type ChartApi interface {
 	Charts(ctx context.Context, chart Category) ([]string, error)
-	MakeConnection() (*grpc.ClientConn, error)
 }
 
 type mobileRpc struct {
