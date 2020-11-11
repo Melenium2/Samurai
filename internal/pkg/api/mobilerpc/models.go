@@ -31,13 +31,17 @@ type Account struct {
 }
 
 func (a Account) ForGrpc() *charts.Account {
+	var p *charts.Proxy
+	if a.Proxy != nil {
+		p = a.Proxy.ForGrpc()
+	}
 	return &charts.Account{
 		Login:    a.Login,
 		Password: a.Password,
 		GsfId:    int64(a.GsfId),
 		Token:    a.Token,
 		Locale:   a.Locale,
-		Proxy:    a.Proxy.ForGrpc(),
+		Proxy:    p,
 		Device:   a.Device,
 	}
 }
@@ -49,7 +53,9 @@ func (a *Account) Fill(account *charts.Account) {
 	a.Token = account.Token
 	a.Login = account.Locale
 	p := &Proxy{}
-	p.Fill(account.Proxy)
+	if account.Proxy != nil {
+		p.Fill(account.Proxy)
+	}
 	a.Proxy = p
 	a.Device = account.Device
 }

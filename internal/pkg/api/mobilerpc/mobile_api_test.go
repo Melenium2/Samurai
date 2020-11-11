@@ -2,7 +2,6 @@ package mobilerpc_test
 
 import (
 	"Samurai/internal/pkg/api/mobilerpc"
-	charts "Samurai/internal/pkg/api/mobilerpc/proto"
 	"context"
 	"fmt"
 	"github.com/stretchr/testify/assert"
@@ -82,11 +81,11 @@ func TestMobileRpc_Charts_NoError(t *testing.T) {
 			if tt.responseCode > 0 {
 				assert.Error(t, err)
 				assert.Equal(t, tt.expectedObject, []string{})
-				assert.Equal(t, &tt.expectedAccount, &charts.Account{Token: "", GsfId: 0})
+				assert.Equal(t, &tt.expectedAccount, &mobilerpc.Account{Token: "", GsfId: 0})
 				return
 			}
 			assert.Equal(t, tt.expectedObject, resp)
-			assert.Equal(t, &tt.expectedAccount, &charts.Account{Token: "123", GsfId: 100})
+			assert.Equal(t, &tt.expectedAccount, &mobilerpc.Account{Token: "123", GsfId: 100})
 		})
 	}
 }
@@ -165,7 +164,7 @@ func TestMobileRpc_Charts_ShouldGetErrorCode1001_NoError(t *testing.T) {
 	resp, err := api.Charts(context.Background(), mobilerpc.NewCategory("GAME_ACTION", "apps_topselling_free"))
 	assert.Error(t, err)
 	assert.Equal(t, 0, len(resp))
-	assert.Equal(t, int64(0), api.Config.RpcAccount.GsfId)
+	assert.Equal(t, 0, api.Config.RpcAccount.GsfId)
 	assert.Equal(t, "", api.Config.RpcAccount.Token)
 }
 
