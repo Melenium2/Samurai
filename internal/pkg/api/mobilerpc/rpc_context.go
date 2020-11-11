@@ -7,11 +7,10 @@ import (
 	"time"
 )
 
-// RpcContext save grpc connection for period of time
+// RpcContext save grpc connection for Period of time
 // then clear connection. We can wake up connection
 // if needed
 type RpcContext interface {
-	Update()
 	Destroy()
 	WakeUp() (*grpc.ClientConn, error)
 }
@@ -21,12 +20,12 @@ type GrpcContext struct {
 	Conn    *grpc.ClientConn
 	Timeout *atomic.Int32
 	Address string
-	period  int32
+	Period  int32
 }
 
 // Update timeout if user renews wanna connect longer
 func (gctx *GrpcContext) Update() {
-	gctx.Timeout.Store(gctx.period)
+	gctx.Timeout.Store(gctx.Period)
 }
 
 // Destroy connection
@@ -45,6 +44,7 @@ func (gctx *GrpcContext) Destroy() {
 // WakeUp connection or just return connection
 func (gctx *GrpcContext) WakeUp() (*grpc.ClientConn, error) {
 	if gctx.Conn != nil {
+		gctx.Update()
 		return gctx.Conn, nil
 	}
 	conn, err := grpc.Dial(gctx.Address, grpc.WithInsecure())
@@ -67,7 +67,6 @@ func (gctx *GrpcContext) tick() {
 		}
 		time.Sleep(time.Second)
 	}
-
 	gctx.Destroy()
 }
 
@@ -77,6 +76,7 @@ func NewGrpcContext(address string, period int, connect ...bool) *GrpcContext {
 	c := &GrpcContext{
 		Address: address,
 		Timeout: atomic.NewInt32(int32(period)),
+		Period:  int32(period),
 	}
 
 	if len(connect) > 0 {

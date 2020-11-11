@@ -10,11 +10,15 @@ import (
 // TODO
 // Что то с аккаунтом (откуда брать, через что сохранять)
 // Тесты
-// Придумать интерфейс
-// Подумать стоит ли оставлять функции makeConnection
+
+type ChartApi interface {
+	Charts(ctx context.Context, chart Category) ([]string, error)
+	MakeConnection() (*grpc.ClientConn, error)
+}
 
 type mobileRpc struct {
-	config      Config
+	Config
+
 	grpcContext RpcContext
 }
 
@@ -30,15 +34,20 @@ func (rpc *mobileRpc) Charts(ctx context.Context, chart Category) ([]string, err
 	resp, err := client.TopCharts(ctx, &charts.ChartsRequest{
 		Cat:     cat,
 		SubCat:  subcat,
-		Account: rpc.config.RpcAccount,
+		Account: rpc.RpcAccount,
 	})
 	if err != nil {
 		return nil, err
 	}
+
+	rpc.checkTokens(resp.Account)
 	if resp.ErrCode > 0 {
+		if resp.ErrCode == 1001 {
+			rpc.RpcAccount.GsfId = 0
+			rpc.RpcAccount.Token = ""
+		}
 		return nil, fmt.Errorf("rpc call response with %d status code", resp.ErrCode)
 	}
-	rpc.checkTokens(resp.Account)
 
 	return resp.Ids, nil
 }
@@ -47,7 +56,7 @@ func (rpc *mobileRpc) Charts(ctx context.Context, chart Category) ([]string, err
 func (rpc *mobileRpc) MakeConnection() (*grpc.ClientConn, error) {
 	if rpc.grpcContext == nil {
 		rpc.grpcContext = NewGrpcContext(
-			fmt.Sprintf("%s:%s", rpc.config.Address, rpc.config.Port),
+			fmt.Sprintf("%s:%s", rpc.Address, rpc.Port),
 			15,
 		)
 	}
@@ -63,15 +72,15 @@ func (rpc *mobileRpc) MakeConnection() (*grpc.ClientConn, error) {
 // Check token and gsfid and set them to local config struct
 // if they are empty
 func (rpc *mobileRpc) checkTokens(acc *charts.Account) {
-	if rpc.config.RpcAccount.GsfId == 0 || rpc.config.RpcAccount.Token == "" {
-		rpc.config.RpcAccount.Token = acc.Token
-		rpc.config.RpcAccount.GsfId = acc.GsfId
+	if acc != nil && (rpc.RpcAccount.GsfId == 0 || rpc.RpcAccount.Token == "") {
+		rpc.RpcAccount.Token = acc.Token
+		rpc.RpcAccount.GsfId = acc.GsfId
 	}
 }
 
 // Create new instance of mobile rpc api
 func New(config Config) *mobileRpc {
 	return &mobileRpc{
-		config: config,
+		Config: config,
 	}
 }

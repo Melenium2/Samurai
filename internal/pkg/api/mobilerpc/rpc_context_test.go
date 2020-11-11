@@ -34,7 +34,9 @@ func TestGrpcContext_Update_ShouldStoreNewValueToTimer_NoError(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			ctx := mobilerpc.GrpcContext{}
+			ctx := mobilerpc.GrpcContext{
+				Period: 30,
+			}
 			if tt.in < 100 {
 				ctx.Timeout = atomic.NewInt32(int32(tt.in))
 			}
@@ -98,7 +100,7 @@ func TestGrpcContext_WakeUp_ShouldPassAllTableTests_NoError(t *testing.T) {
 		{
 			name: "Create connection. Connection not nil.",
 			timeout: false,
-			expectedTime: 29,
+			expectedTime: 4,
 		},
 		{
 			name: "Create connection. Wait until time os over.",
@@ -111,6 +113,7 @@ func TestGrpcContext_WakeUp_ShouldPassAllTableTests_NoError(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			ctx := mobilerpc.GrpcContext{
 				Timeout: atomic.NewInt32(0),
+				Period: 5,
 			}
 			if tt.conn != nil {
 				ctx.Conn = tt.conn
@@ -125,7 +128,7 @@ func TestGrpcContext_WakeUp_ShouldPassAllTableTests_NoError(t *testing.T) {
 
 
 			if tt.timeout {
-				time.Sleep(time.Second * 31)
+				time.Sleep(time.Second * 6)
 				assert.Nil(t, ctx.Conn)
 				assert.Equal(t, int32(0), ctx.Timeout.Load())
 			}
