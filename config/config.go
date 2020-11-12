@@ -1,19 +1,21 @@
 package config
 
 import (
+	"Samurai/internal/pkg/api/mobilerpc"
 	"gopkg.in/yaml.v3"
 	"io/ioutil"
 	"os"
+	"time"
 )
 
 //Database config
 type DBConfig struct {
-	Database   string `yaml:"name"`
-	User       string `yaml:"user"`
-	Password   string `yaml:"password"`
-	Address    string `yaml:"address"`
-	Port       string `yaml:"port"`
-	Schema     string `yaml:"schema"`
+	Database string `yaml:"name"`
+	User     string `yaml:"user"`
+	Password string `yaml:"password"`
+	Address  string `yaml:"address"`
+	Port     string `yaml:"port"`
+	Schema   string `yaml:"schema"`
 }
 
 // Api config
@@ -21,12 +23,24 @@ type ApiConfig struct {
 	Url         string `yaml:"url"`
 	Key         string `yaml:"key"`
 	GrpcAddress string `yaml:"grpc_address"`
+	GrpcPort    string `yaml:"grpc_port"`
+	GrpcAccount *mobilerpc.Account
+}
+
+// Main config
+type AppConfig struct {
+	Bundle    string        `yaml:"bundle"`
+	Period    int           `yaml:"period"`
+	Intensity time.Duration `yaml:"intensity"`
+	Lang      string        `yaml:"lang"`
+	Keywords  []string      `yaml:",flow"`
 }
 
 //Application config
 type Config struct {
 	Api      ApiConfig `yaml:"api"`
 	Database DBConfig  `yaml:"database"`
+	App      AppConfig `yaml:"app"`
 
 	Envs []string `yaml:",flow"`
 }

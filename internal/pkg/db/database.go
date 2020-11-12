@@ -22,6 +22,7 @@ type Getter interface {
 }
 
 type Tracking interface {
+	Inserter
 }
 
 type TrackingDatabase struct {

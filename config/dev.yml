@@ -3,6 +3,7 @@ api:
   url: http://localhost:1117/api/v1
   key: "Security 3923cf9a417e73be95b40dc5db60c97dcb876a61"
   grpc_address: <address>
+  grpc_port: <port>
 database:
   name: tracking
   user: postgres
