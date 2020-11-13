@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"google.golang.org/grpc"
+	"log"
 )
 
 // TODO
@@ -30,12 +31,14 @@ func (rpc *mobileRpc) Charts(ctx context.Context, chart Category) ([]string, err
 	client := charts.NewGuardClient(conn)
 
 	cat, subcat := chart.Split()
+
 	resp, err := client.TopCharts(ctx, &charts.ChartsRequest{
 		Cat:     cat,
 		SubCat:  subcat,
 		Account: rpc.RpcAccount.ForGrpc(),
 	})
 	if err != nil {
+		log.Print("Where top charts")
 		return nil, err
 	}
 

@@ -7,6 +7,7 @@ import (
 	"Samurai/internal/pkg/api/mobilerpc"
 	"Samurai/internal/pkg/db"
 	"context"
+	"log"
 	"strings"
 	"time"
 )
@@ -154,6 +155,7 @@ func (w *Samurai) UpdateTrack(ctx context.Context, pos int, t string) error {
 
 func (w *Samurai) Done() {
 	w.isWorking = false
+	log.Print("Shutdown...")
 }
 
 func (w *Samurai) bundles(apps []inhuman.App) []string {

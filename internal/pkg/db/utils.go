@@ -50,15 +50,16 @@ func InitSchema(connection *pgx.Conn, schemafile string) error {
 		return err
 	}
 	schema := string(b)
-	tables := strings.Split(schema, ";\n")
+	tables := strings.Split(schema, ";\r\n")
 
 	ctx := context.Background()
 	for _, v := range tables {
 		_, err = connection.Exec(ctx, v)
 		if err != nil {
-			if !strings.Contains(v, "create type") && !strings.Contains(err.Error(), "42710")  {
-				return err
+			if strings.Contains(err.Error(), "developercontacts") && strings.Contains(err.Error(), "42710")  {
+				continue
 			}
+			return err
 		}
 	}
 

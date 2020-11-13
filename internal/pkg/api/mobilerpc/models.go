@@ -65,6 +65,15 @@ type Proxy struct {
 	Https string
 }
 
+func NewProxy(proxy string) *Proxy {
+	p := strings.Split(proxy, "//")
+
+	return &Proxy{
+		Http:  "http://" + p[1],
+		Https: "https://" + p[1],
+	}
+}
+
 func (p Proxy) ForGrpc() *charts.Proxy {
 	return &charts.Proxy{
 		Http: p.Http,

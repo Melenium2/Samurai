@@ -70,7 +70,11 @@ func New(p ...string) Config {
 		panic(err)
 	}
 
-	config := Config{}
+	config := Config{
+		Api: ApiConfig{
+			GrpcAccount: &mobilerpc.Account{},
+		},
+	}
 	if err := yaml.Unmarshal(data, &config); err != nil {
 		panic(err)
 	}
