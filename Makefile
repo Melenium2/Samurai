@@ -1,7 +1,7 @@
 export grpc_address := 1
 export grpc_port := 2
 
-GOBIN=./cmd/main.exe
+GOBIN=./cmd/main
 
 ## build: Build go binary
 build:

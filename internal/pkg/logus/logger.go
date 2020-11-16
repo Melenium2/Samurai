@@ -1,6 +1,9 @@
 package logus
 
-import murlog "github.com/Melenium2/Murlog"
+import (
+	murlog "github.com/Melenium2/Murlog"
+	"log"
+)
 
 type Logus interface {
 	Log(key, value interface{})
@@ -42,4 +45,20 @@ func New(logger murlog.Logger) *LogusImpl {
 	return &LogusImpl{
 		logger,
 	}
+}
+
+type EmptyLogusImpl struct {
+
+}
+
+func (l *EmptyLogusImpl) Log(key, value interface{}) {
+	log.Print(key, " ", value)
+}
+
+func (l *EmptyLogusImpl) LogMany(units ...LUnit) {
+	log.Print(units)
+}
+
+func NewEmptyLogger() *EmptyLogusImpl {
+	return &EmptyLogusImpl{}
 }

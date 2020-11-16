@@ -6,6 +6,7 @@ import (
 	"Samurai/internal/pkg/api/inhuman"
 	"Samurai/internal/pkg/api/mobilerpc"
 	"Samurai/internal/pkg/db"
+	"Samurai/internal/pkg/logus"
 	"context"
 	"log"
 	"strings"
@@ -29,6 +30,7 @@ type Samurai struct {
 
 	TaskId    int
 	isWorking bool
+	logger    logus.Logus
 	ctx       context.Context
 	api       api.Requester
 	db        db.Tracking
@@ -39,16 +41,13 @@ func (w *Samurai) Work() error {
 	for w.isWorking && p > 0 {
 		// Why? Because DB clear ctx after transaction
 		ctxWithTimeout, _ := context.WithTimeout(w.ctx, time.Second*120)
-		// Перед тем как добовлять новую запись, нуобходимо проверить присутствует
-		// 		ли приложение с заданными параметрами. Если необходимо сделать новый слепок
-		// 		то можно в начальных параметрах указывать --force флаг
-		//		Для этого необходимо поменять get метод к бд
 
 		if err := w.Tick(ctxWithTimeout); err != nil {
 			return err
 		}
 
 		p--
+		w.logger.LogMany(logus.NewLUnit("Work()", "process"), logus.NewLUnit(p, "times left"))
 		time.Sleep(w.Config.Intensity)
 	}
 	w.Done()
@@ -66,6 +65,7 @@ func (w *Samurai) Tick(ctx context.Context) error {
 		if err != nil {
 			return err
 		}
+		w.logger.Log("Tick()", "Create new app for tracking")
 		w.TaskId = id
 	}
 
@@ -97,6 +97,7 @@ func (w *Samurai) Tick(ctx context.Context) error {
 		}
 	}
 
+	w.logger.Log("Tick()", "Tick completed")
 	return nil
 }
 
@@ -178,19 +179,20 @@ func (w *Samurai) position(find string, values []string) int {
 	return -1
 }
 
-func New(config config.AppConfig, api api.Requester, repo db.Tracking) *Samurai {
+func New(config config.AppConfig, logger logus.Logus, api api.Requester, repo db.Tracking) *Samurai {
 	return &Samurai{
 		ctx:       context.Background(),
 		Config:    config,
+		logger:    logger,
 		isWorking: true,
 		api:       api,
 		db:        repo,
 	}
 }
 
-func NewDefault(config config.Config) *Samurai {
+func NewDefault(config config.Config, logger logus.Logus) *Samurai {
 	requester := api.New(config.Api, config.App.Lang)
 	repo := db.NewWithConfig(config.Database)
 
-	return New(config.App, requester, repo)
+	return New(config.App, logger, requester, repo)
 }

@@ -4,6 +4,7 @@ import (
 	"Samurai/internal/pkg/api/mobilerpc"
 	"gopkg.in/yaml.v3"
 	"io/ioutil"
+	"log"
 	"os"
 	"time"
 )
@@ -43,6 +44,43 @@ type Config struct {
 	App      AppConfig `yaml:"app"`
 
 	Envs []string `yaml:",flow"`
+}
+
+// Print application full config
+func (c Config) View() {
+	log.Print("____START")
+	log.Print("Environments: ", c.Envs)
+
+	log.Print("---------------------------")
+
+	log.Print("***ACCOUNT***")
+	log.Print("\tLogin:", c.Api.GrpcAccount.Login)
+	log.Print("\tPassword: ", c.Api.GrpcAccount.Password)
+	log.Print("\tToken: ", c.Api.GrpcAccount.Token)
+	log.Print("\tGSFID: ", c.Api.GrpcAccount.GsfId)
+	log.Print("\tDevice: ", c.Api.GrpcAccount.Device)
+	log.Print("\tProxy: ", c.Api.GrpcAccount.Proxy)
+	log.Print("\tLocale: ", c.Api.GrpcAccount.Locale)
+
+	log.Print("---------------------------")
+
+	log.Print("***APPLICATION***")
+	log.Print("\tLanguage: ", c.App.Lang)
+	log.Print("\tIntensity", c.App.Intensity)
+	log.Print("\tPeriod", c.App.Period)
+	log.Print("\tKeywords: ", c.App.Keywords)
+	log.Print("\tBundle: ", c.App.Bundle)
+
+	log.Print("---------------------------")
+
+	log.Print("***DATABASE***")
+	log.Print("\tAddress: ", c.Database.Address)
+	log.Print("\tPort: ", c.Database.Port)
+	log.Print("\tUser: ", c.Database.User)
+	log.Print("\tPassword: ", c.Database.Password)
+	log.Print("\tDatabase: ", c.Database.Database)
+	log.Print("\tSchema file: ", c.Database.Schema)
+	log.Print("____END")
 }
 
 /**

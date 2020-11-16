@@ -7,6 +7,7 @@ import (
 	"Samurai/internal/pkg/api/mobilerpc"
 	"Samurai/internal/pkg/db"
 	"Samurai/internal/pkg/executor"
+	"Samurai/internal/pkg/logus"
 	"context"
 	"github.com/jackc/pgx/v4"
 	"github.com/stretchr/testify/assert"
@@ -76,7 +77,7 @@ func TestSamurai_NewApp_ShouldInsertNewAppToDb_NoError(t *testing.T) {
 		Period: 30,
 		Lang:   "ru_RU",
 	}
-	ex := executor.New(c, mock_api{}, &mock_repo{appdb: make(map[int]db.App)})
+	ex := executor.New(c, logus.NewEmptyLogger(), mock_api{}, &mock_repo{appdb: make(map[int]db.App)})
 
 	id, err := ex.NewApp(context.Background(), &inhuman.App{Bundle: "123"})
 	assert.NoError(t, err)
@@ -89,7 +90,7 @@ func TestSamurai_UpdateMeta_ShouldInsertNewMetaInfoToDb_NoError(t *testing.T) {
 		Lang:   "ru_RU",
 	}
 	repo := &mock_repo{metadb: make(map[int]db.Meta)}
-	ex := executor.New(c, mock_api{}, repo)
+	ex := executor.New(c, logus.NewEmptyLogger(), mock_api{}, repo)
 	ex.TaskId = 1
 
 	err := ex.UpdateMeta(context.Background(), &inhuman.App{Description: "123"})
@@ -105,7 +106,7 @@ func TestSamurai_UpdateTrack_ShouldInsertNewTrackInfoAsKeywordToDb_NoError(t *te
 		Lang:   "ru_RU",
 	}
 	repo := &mock_repo{keydb: make(map[int]db.Track)}
-	ex := executor.New(c, mock_api{}, repo)
+	ex := executor.New(c, logus.NewEmptyLogger(), mock_api{}, repo)
 	ex.TaskId = 1
 
 	err := ex.UpdateTrack(context.Background(), 50, "key")
@@ -128,7 +129,7 @@ func TestSamurai_Tick_ShouldDoAllWorkOnce_NoError(t *testing.T) {
 		categorydb: make(map[int]db.Track),
 		keydb:      make(map[int]db.Track),
 	}
-	ex := executor.New(c, mock_api{}, repo)
+	ex := executor.New(c, logus.NewEmptyLogger(), mock_api{}, repo)
 
 	err := ex.Tick(context.Background())
 	assert.NoError(t, err)
@@ -167,7 +168,7 @@ func TestSamurai_Work_ShouldDoAllWork3Times_NoError(t *testing.T) {
 		categorydb: make(map[int]db.Track),
 		keydb:      make(map[int]db.Track),
 	}
-	ex := executor.New(c, mock_api{}, repo)
+	ex := executor.New(c, logus.NewEmptyLogger(), mock_api{}, repo)
 
 	err := ex.Work()
 	assert.NoError(t, err)
@@ -207,7 +208,7 @@ func TestSamurai_Done_ShouldStopAfterFirstIteration_NoError(t *testing.T) {
 		categorydb: make(map[int]db.Track),
 		keydb:      make(map[int]db.Track),
 	}
-	ex := executor.New(c, mock_api{}, repo)
+	ex := executor.New(c, logus.NewEmptyLogger(), mock_api{}, repo)
 
 	go func() {
 		time.Sleep(time.Second * 1)
@@ -236,7 +237,7 @@ func TestSamurai_NewApp_ShouldInsertNewRowToDb_NoError(t *testing.T) {
 	c.App.Lang = "ru_RU"
 	c.App.Period = 30
 
-	ex := executor.NewDefault(c)
+	ex := executor.NewDefault(c, logus.NewEmptyLogger())
 
 
 	id, err := ex.NewApp(context.Background(), &inhuman.App{
@@ -265,7 +266,7 @@ func TestSamurai_NewApp_ShouldntInsertRowCozContextEmpty_NoError(t *testing.T) {
 	c.App.Lang = "ru_RU"
 	c.App.Period = 30
 
-	ex := executor.New(c.App, mock_api{}, db.NewAppTracking(DatabaseConnection(c.Database)))
+	ex := executor.New(c.App, logus.NewEmptyLogger(), mock_api{}, db.NewAppTracking(DatabaseConnection(c.Database)))
 
 	assert.Panics(t, func() {
 		ex.NewApp(nil, &inhuman.App{
@@ -281,7 +282,7 @@ func TestSamurai_UpdateMeta_ShouldInsertNewRow_NoError(t *testing.T) {
 
 	conn := DatabaseConnection(c.Database)
 	tr := db.NewWithConnection(conn)
-	ex := executor.New(c.App, mock_api{}, tr)
+	ex := executor.New(c.App, logus.NewEmptyLogger(), mock_api{}, tr)
 
 	app := &inhuman.App{
 		Bundle: "com.com.com",
@@ -313,7 +314,7 @@ func TestSamurai_UpdateTrack_ShouldInsertNewKeywordsAndCategories(t *testing.T) 
 
 	conn := DatabaseConnection(c.Database)
 	tr := db.NewWithConnection(conn)
-	ex := executor.New(c.App, mock_api{}, tr)
+	ex := executor.New(c.App, logus.NewEmptyLogger(), mock_api{}, tr)
 
 	app := &inhuman.App{
 		Bundle: "com.com.com",
@@ -353,7 +354,7 @@ func TestSamurai_Tick_ShouldDoneOnTickOnlyDb(t *testing.T) {
 
 	conn := DatabaseConnection(c.Database)
 	tr := db.NewWithConnection(conn)
-	ex := executor.New(c.App, mock_api{}, tr)
+	ex := executor.New(c.App, logus.NewEmptyLogger(), mock_api{}, tr)
 
 	ctx, _ := context.WithTimeout(context.Background(), time.Second * 120)
 
@@ -428,7 +429,7 @@ func TestSamurai_Tick_ShouldDoneOnTick(t *testing.T) {
 	request := api.New(c.Api, c.App.Lang)
 
 
-	ex := executor.New(c.App, request, tr)
+	ex := executor.New(c.App, logus.NewEmptyLogger(), request, tr)
 
 	ctx, _ := context.WithTimeout(context.Background(), time.Second * 120)
 

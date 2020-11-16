@@ -1,0 +1,56 @@
+# golang alpine 1.15.3
+FROM golang@sha256:6bdf3cc6cb0509e860e626a339c19b7e842efb8444960bb72d654e33607c34f5 as builder
+
+RUN apk update && apk add --no-cache git ca-certificates tzdata make && update-ca-certificates
+
+ENV USER=appuser
+ENV UID=10001
+
+RUN adduser \
+    --disabled-password \
+    --gecos "" \
+    --home "/nonexistent" \
+    --shell "/sbin/nologin" \
+    --no-create-home \
+    --uid "${UID}" \
+    "${USER}"
+
+WORKDIR $GOPATH/src/nani
+COPY . .
+
+ENV github="https://github.com/Melenium2/Samurai"
+ENV appname=Samurai
+
+RUN git clone ${github}
+RUN make -C $appname deploy
+RUN ls .
+RUN cp -r ./$appname/config/prod.yml /go/bin/prod.yml
+RUN cp -r ./$appname/config/schema.sql /go/bin/schema.sql
+#
+RUN rm /go/bin/$appname
+#
+RUN ls /go/bin
+
+FROM scratch
+
+COPY --from=builder /usr/share/zoneinfo /usr/share/zoneinfo
+COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
+COPY --from=builder /etc/passwd /etc/passwd
+COPY --from=builder /etc/group /etc/group
+
+COPY --from=builder /go/bin /go/bin
+
+USER appuser:appuser
+
+WORKDIR /go/bin
+
+CMD [
+    "/go/bin/main",
+    "-proxy", "http://STqthJ:2odx6V@45.132.21.233:8000"
+    "-bundle", "ru.alfabank.mobile.android"
+    "-email", "ceciliamcalistervugt93@gmail.com",
+    "-pass", "Hbibcxzauig"
+    "-keys", "bank, банк, русский банк"
+]
+
+

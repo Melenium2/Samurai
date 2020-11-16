@@ -6,9 +6,11 @@ import (
 	"Samurai/internal/pkg/api/mobilerpc"
 	"Samurai/internal/pkg/db"
 	"Samurai/internal/pkg/executor"
+	"Samurai/internal/pkg/logus"
 	"context"
 	"flag"
 	"fmt"
+	murlog "github.com/Melenium2/Murlog"
 	"github.com/jackc/pgx/v4"
 	"io/ioutil"
 	"log"
@@ -24,6 +26,7 @@ var ErrNotConfigured = func(value interface{}) error {
 	return fmt.Errorf("error app not configured %v", value)
 }
 
+var PRODUCTION bool
 var bundle string
 var locale string
 var period int
@@ -38,19 +41,12 @@ var keywords string
 var keyFile string
 var force bool
 
-/*
-./cmd/main.exe -proxy "http://STqthJ:2odx6V@45.132.21.233:8000" -bundle ru.alfabank.mobile.android -email ceciliamcalistervugt93@gmail.com -pass Hbibcxzauig -keys 'bank, банк, русский банк'
- */
-
-// TODO SAMURAI
-// Logger
-// Добавить логи по процессу
-// Переписать конфиг чтоб выводился для людей
-// Невозможно выключить, надо бы починить
-
 func main() {
-	c := config.New("./config/dev.yml")
-	c.Database.Schema = "./config/schema.sql"
+
+	p := os.Getenv("production")
+	if p != "" {
+		PRODUCTION = true
+	}
 
 	{
 		flag.StringVar(&bundle, "bundle", "", "bundle of tracking application")
@@ -69,6 +65,13 @@ func main() {
 
 		flag.Parse()
 	}
+
+	configPath := "./config/dev.yml"
+	if PRODUCTION {
+		configPath = "./config/prod.yml"
+	}
+	c := config.New(configPath)
+	c.Database.Schema = "./config/schema.sql"
 
 	{
 		var grpc_address = os.Getenv("grpc_address")
@@ -93,7 +96,7 @@ func main() {
 			c.App.Bundle = bundle
 		}
 
-		if email == "" && password == ""  {
+		if email == "" && password == "" {
 			if token == "" && gsfid == 0 {
 				log.Fatal(ErrNotConfigured("need to provide email/password or token/gsfid"))
 			}
@@ -145,13 +148,23 @@ func main() {
 	}
 	repository := db.NewWithConnection(conn)
 
-	ex := executor.New(c.App, api.New(c.Api, c.App.Lang), repository)
-	id, err := loadTrackId(conn, bundle, locale, period)
-	if err != nil {
-		log.Fatal(err)
-	}
-	if id != 0 {
-		ex.TaskId = id
+	logger := logus.New(configureLogger())
+
+	ex := executor.New(
+		c.App,
+		logger,
+		api.New(c.Api, c.App.Lang),
+		repository,
+	)
+
+	if !force {
+		id, err := loadTrackId(conn, bundle, locale, period)
+		if err != nil {
+			log.Fatal(err)
+		}
+		if id != 0 {
+			ex.TaskId = id
+		}
 	}
 
 	go func() {
@@ -159,29 +172,24 @@ func main() {
 		signal.Notify(sig, syscall.SIGTERM, syscall.SIGINT)
 		<-sig
 		ex.Done()
+		os.Exit(1)
 	}()
 
-	log.Print("\nACCOUNT")
-	log.Print(c.Api.GrpcAccount.Login)
-	log.Print(c.Api.GrpcAccount.Password)
-	log.Print(c.Api.GrpcAccount.Token)
-	log.Print(c.Api.GrpcAccount.GsfId)
-	log.Print(c.Api.GrpcAccount.Device)
-	log.Print(c.Api.GrpcAccount.Proxy)
-	log.Print(c.Api.GrpcAccount.Locale)
-
-	log.Print("\nAPPLICATION")
-	log.Print(c.App.Lang)
-	log.Print(c.App.Intensity)
-	log.Print(c.App.Period)
-	log.Print(c.App.Keywords)
-	log.Print(c.App.Bundle)
+	c.View()
 
 	if err := ex.Work(); err != nil {
 		log.Fatal(err)
 	}
 
 	log.Print("Off")
+}
+
+func configureLogger() murlog.Logger {
+	c := murlog.NewConfig()
+	c.TimePref(time.RFC822)
+	c.CallerPref()
+
+	return murlog.NewLogger(c)
 }
 
 func connection(config config.DBConfig) (*pgx.Conn, error) {
@@ -205,7 +213,7 @@ func connection(config config.DBConfig) (*pgx.Conn, error) {
 func loadTrackId(conn *pgx.Conn, bundle, locale string, period int) (int, error) {
 	row := conn.QueryRow(
 		context.Background(),
-		"select id from app_tracking where bundle = $1 and geo = $2 and period = $3",
+		"select id from app_tracking where bundle = $1 and geo = $2 and period = $3 order by id desc",
 		bundle, locale, period,
 	)
 	var id int
