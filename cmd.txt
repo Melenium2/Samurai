@@ -1,3 +1,0 @@
-/*
-./cmd/main.exe -proxy "http://STqthJ:2odx6V@45.132.21.233:8000" -bundle ru.alfabank.mobile.android -email ceciliamcalistervugt93@gmail.com -pass Hbibcxzauig -keys 'bank, банк, русский банк'
-*/
