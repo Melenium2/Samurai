@@ -1,0 +1,10 @@
+version: '3.7'
+services:
+    samurai:
+        build: .
+        container_name: samurai
+        environment:
+            - production=true
+            - api_key=${API_KEY}
+            - db_pass=${DB_PASS}
+            - db_user=${DB_USER}

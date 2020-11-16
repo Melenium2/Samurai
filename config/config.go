@@ -131,6 +131,15 @@ func New(p ...string) Config {
 	if ok && v != "" {
 		config.Database.User = v
 	}
+	v, ok = envs["grpc_address"]
+	if ok && v != "" {
+		config.Api.GrpcAddress = v
+	}
+	v, ok = envs["grpc_port"]
+	if ok && v != "" {
+		config.Api.GrpcPort = v
+	}
+
 
 	return config
 }

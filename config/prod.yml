@@ -1,0 +1,13 @@
+envs: [api_key, grpc_address, grpc_port, db_user, db_pass]
+api:
+  url: http://146.0.36.96:1117/api/v1
+  key:
+  grpc_address:
+  grpc_port:
+database:
+  name: tracking
+  user:
+  password:
+  address: 146.0.36.96
+  port: 5432
+  schema: schema.sql
