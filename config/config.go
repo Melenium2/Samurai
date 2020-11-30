@@ -66,8 +66,8 @@ func (c Config) View() {
 
 	log.Print("***APPLICATION***")
 	log.Print("\tLanguage: ", c.App.Lang)
-	log.Print("\tIntensity", c.App.Intensity)
-	log.Print("\tPeriod", c.App.Period)
+	log.Print("\tIntensity ", c.App.Intensity)
+	log.Print("\tPeriod ", c.App.Period)
 	log.Print("\tKeywords: ", c.App.Keywords)
 	log.Print("\tBundle: ", c.App.Bundle)
 

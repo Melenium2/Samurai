@@ -40,7 +40,7 @@ func (w *Samurai) Work() error {
 	p := w.Config.Period
 	for w.isWorking && p > 0 {
 		// Why? Because DB clear ctx after transaction
-		ctxWithTimeout, _ := context.WithTimeout(w.ctx, time.Second*120)
+		ctxWithTimeout, _ := context.WithTimeout(w.ctx, time.Minute * 6)
 
 		if err := w.Tick(ctxWithTimeout); err != nil {
 			return err
