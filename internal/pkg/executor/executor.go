@@ -8,6 +8,7 @@ import (
 	"Samurai/internal/pkg/db"
 	"Samurai/internal/pkg/logus"
 	"context"
+	"fmt"
 	"log"
 	"strings"
 	"time"
@@ -76,7 +77,8 @@ func (w *Samurai) Tick(ctx context.Context) error {
 	for _, k := range w.Config.Keywords {
 		keys, err := w.api.Flow(k)
 		if err != nil {
-			return err
+			w.logger.Log("error in flow", fmt.Sprintf("keyword '%s' response with: %s", k, err))
+			continue
 		}
 		bundles := w.bundles(keys)
 		pos := w.position(w.Config.Bundle, bundles)
