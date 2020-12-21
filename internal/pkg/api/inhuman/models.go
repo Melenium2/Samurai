@@ -1,32 +1,105 @@
 package inhuman
 
-type App struct {
-	Bundle            string            `json:"bundle" db:"bundle"`
-	DeveloperId       string            `json:"developerId" db:"developer_id"`
-	Developer         string            `json:"developer" db:"developer"`
-	Title             string            `json:"title" db:"title"`
-	Categories        string            `json:"categories" db:"categories"`
-	Price             string            `json:"price" db:"price"`
-	Picture           string            `json:"picture" db:"picture"`
-	Screenshots       []string          `json:"screenshots" db:"screenshots"`
-	Rating            string            `json:"rating" db:"rating"`
-	ReviewCount       string            `json:"reviewCount" db:"review_count"`
-	RatingHistogram   []string          `json:"ratingHistogram" db:"rating_histogram"`
-	Description       string            `json:"description" db:"description"`
-	ShortDescription  string            `json:"shortDescription" db:"short_description"`
-	RecentChanges     string            `json:"recentChanges" db:"recent_changes"`
-	ReleaseDate       string            `json:"releaseDate" db:"release_date"`
-	LastUpdateDate    string            `json:"lastUpdateDate" db:"last_update_date"`
-	AppSize           string            `json:"appSize" db:"app_size"`
-	Installs          string            `json:"installs" db:"installs"`
-	Version           string            `json:"version" db:"version"`
-	AndroidVersion    string            `json:"androidVersion" db:"android_version"`
-	ContentRating     string            `json:"contentRating" db:"content_rating"`
-	DeveloperContacts DeveloperContacts `json:"developerContacts" db:"developer_contacts"`
-	PrivacyPolicy     string            `json:"privacyPolicy,omitempty"`
+import (
+	"Samurai/internal/pkg/api/models"
+	"encoding/json"
+	"fmt"
+	"strings"
+)
+
+type StoreApp struct {
+	ID             string              `json:"id,omitempty"`
+	Developer      string              `json:"developer,omitempty"`
+	DeveloperId    string              `json:"developer_id,omitempty"`
+	Title          string              `json:"title,omitempty"`
+	Categories     []string            `json:"genres,omitempty"`
+	Price          string              `json:"price,omitempty"`
+	Image          string              `json:"image,omitempty"`
+	Screenshots    map[string][]string `json:"screenshots,omitempty"`
+	UserRating     StoreRating         `json:"userRating,omitempty"`
+	Description    string              `json:"description,omitempty"`
+	ReleaseDate    string              `json:"releaseDate,omitempty"`
+	VersionHistory []AppVersionChanges `json:"versionHistory,omitempty"`
+	AppSize        int                 `json:"appSize,omitempty"`
+	Version        string              `json:"osVersion,omitempty"`
+	ContentRating  ContentRating       `json:"contentRating,omitempty"`
+	Website        string              `json:"website,omitempty"`
+	PrivacyPolicy  string              `json:"privacyPolicy,omitempty"`
 }
 
-type DeveloperContacts struct {
-	Email    string `json:"email,omitempty"`
-	Contacts string `json:"contacts,omitempty"`
+type AppVersionChanges struct {
+	Version      string `json:"version,omitempty"`
+	ReleaseNotes string `json:"releaseNotes,omitempty"`
+	Date         string `json:"date,omitempty"`
 }
+
+type StoreRating struct {
+	Value       float32 `json:"value,omitempty"`
+	RatingCount float32   `json:"ratingCount,omitempty"`
+	Histogram   []float32 `json:"histogram,omitempty"`
+}
+
+type ContentRating struct {
+	Value string `json:"value,omitempty"`
+}
+
+func CreateFromStore(m StoreApp) models.App {
+	screenshots := make([]string, len(m.Screenshots))
+	i := 0
+	for k, v := range m.Screenshots {
+		s := map[string]interface{}{
+			"Device":      k,
+			"Screenshots": v,
+		}
+		b, err := json.Marshal(s)
+		if err != nil {
+			panic(err)
+		}
+		screenshots[i] = string(b)
+		i++
+	}
+
+	histogram := make([]string, len(m.UserRating.Histogram))
+	for i, v := range m.UserRating.Histogram {
+		histogram[i] = fmt.Sprintf("%.0f", v)
+	}
+
+	var recentChange string
+	var lastUpdateDate string
+	var version string
+	{
+		if len(m.VersionHistory) > 0 {
+			lastChange := m.VersionHistory[0]
+			recentChange = lastChange.ReleaseNotes
+			lastUpdateDate = lastChange.Date
+			version = lastChange.Version
+		}
+	}
+
+	return models.App{
+		Bundle:            m.ID,
+		DeveloperId:       m.DeveloperId,
+		Developer:         m.Developer,
+		Title:             m.Title,
+		Categories:        strings.Join(m.Categories, ", "),
+		Price:             m.Price,
+		Picture:           m.Image,
+		Screenshots:       screenshots,
+		Rating:            fmt.Sprintf("%.0f", m.UserRating.Value),
+		ReviewCount:       fmt.Sprintf("%.0f", m.UserRating.RatingCount),
+		RatingHistogram:   histogram,
+		Description:       m.Description,
+		RecentChanges:     recentChange,
+		ReleaseDate:       m.ReleaseDate,
+		LastUpdateDate:    lastUpdateDate,
+		AppSize:           fmt.Sprint(m.AppSize),
+		Version:           version,
+		AndroidVersion:    m.Version,
+		ContentRating:     m.ContentRating.Value,
+		DeveloperContacts: models.DeveloperContacts{
+			Contacts: m.Website,
+		},
+		PrivacyPolicy:     m.PrivacyPolicy,
+	}
+}
+

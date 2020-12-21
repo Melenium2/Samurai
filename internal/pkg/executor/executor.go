@@ -3,8 +3,7 @@ package executor
 import (
 	"Samurai/config"
 	"Samurai/internal/pkg/api"
-	"Samurai/internal/pkg/api/inhuman"
-	"Samurai/internal/pkg/api/mobilerpc"
+	"Samurai/internal/pkg/api/models"
 	"Samurai/internal/pkg/db"
 	"Samurai/internal/pkg/logus"
 	"context"
@@ -88,7 +87,7 @@ func (w *Samurai) Tick(ctx context.Context) error {
 	}
 
 	for _, subCat := range categories {
-		cat := mobilerpc.NewCategory(app.Categories, subCat)
+		cat := models.NewCategory(app.Categories, subCat)
 		chart, err := w.api.Charts(ctx, cat)
 		if err != nil {
 			return err
@@ -103,7 +102,7 @@ func (w *Samurai) Tick(ctx context.Context) error {
 	return nil
 }
 
-func (w *Samurai) NewApp(ctx context.Context, app *inhuman.App) (int, error) {
+func (w *Samurai) NewApp(ctx context.Context, app *models.App) (int, error) {
 	return w.db.Insert(ctx, db.App{
 		Bundle:      app.Bundle,
 		Category:    app.Categories,
@@ -115,7 +114,7 @@ func (w *Samurai) NewApp(ctx context.Context, app *inhuman.App) (int, error) {
 	})
 }
 
-func (w *Samurai) UpdateMeta(ctx context.Context, app *inhuman.App) error {
+func (w *Samurai) UpdateMeta(ctx context.Context, app *models.App) error {
 	_, err := w.db.Insert(ctx, db.Meta{
 		BundleId:         w.TaskId,
 		Title:            app.Title,
@@ -161,7 +160,7 @@ func (w *Samurai) Done() {
 	log.Print("Shutdown...")
 }
 
-func (w *Samurai) bundles(apps []inhuman.App) []string {
+func (w *Samurai) bundles(apps []models.App) []string {
 	r := make([]string, len(apps))
 	for i := 0; i < len(apps); i++ {
 		r[i] = apps[i].Bundle

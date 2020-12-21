@@ -10,7 +10,6 @@ type metaTable struct {
 	db *pgx.Conn
 }
 
-
 func (m *metaTable) Insert(ctx context.Context, data interface{}) (int, error) {
 	tx, err := m.db.Begin(ctx)
 	if err != nil {

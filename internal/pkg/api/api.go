@@ -4,30 +4,27 @@ import (
 	"Samurai/config"
 	"Samurai/internal/pkg/api/inhuman"
 	"Samurai/internal/pkg/api/mobilerpc"
+	"Samurai/internal/pkg/api/models"
 	"context"
 	"strings"
 )
 
-type Requester interface {
-	mobilerpc.ChartApi
-	inhuman.ExternalApi
-}
 
 type ApiImpl struct {
-	mobile  mobilerpc.ChartApi
-	inhuman inhuman.ExternalApi
+	chart  ChartApi
+	common ExternalApi
 }
 
-func (a *ApiImpl) Charts(ctx context.Context, chart mobilerpc.Category) ([]string, error) {
-	return a.mobile.Charts(ctx, chart)
+func (a *ApiImpl) Charts(ctx context.Context, chart models.Category) ([]string, error) {
+	return a.chart.Charts(ctx, chart)
 }
 
-func (a *ApiImpl) App(bundle string) (*inhuman.App, error) {
-	return a.inhuman.App(bundle)
+func (a *ApiImpl) App(bundle string) (models.App, error) {
+	return a.common.App(bundle)
 }
 
-func (a *ApiImpl) Flow(key string) ([]inhuman.App, error) {
-	return a.inhuman.Flow(key)
+func (a *ApiImpl) Flow(key string) ([]models.App, error) {
+	return a.common.Flow(key)
 }
 
 func New(config config.ApiConfig, lang string) *ApiImpl {
@@ -37,7 +34,7 @@ func New(config config.ApiConfig, lang string) *ApiImpl {
 		Port:       config.GrpcPort,
 		RpcAccount: config.GrpcAccount,
 	})
-	api := inhuman.New(inhuman.Config{
+	api := inhuman.NewApiPlay(inhuman.Config{
 		Url:       config.Url,
 		Key:       config.Key,
 		Hl:        strings.ToLower(hlgl[0]),
