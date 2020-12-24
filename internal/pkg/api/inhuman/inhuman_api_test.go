@@ -260,11 +260,11 @@ func Config() inhuman.Config {
 	c := config.New("../../../../config/dev.yml")
 
 	return inhuman.Config{
-		Url:       c.Api.Url,
-		Key:       c.Api.Key,
-		Hl:        "ru",
-		Gl:        "ru",
-		AppsCount: 250,
+		Url:        c.Api.Url,
+		Key:        c.Api.Key,
+		Hl:         "ru",
+		Gl:         "ru",
+		ItemsCount: 250,
 	}
 }
 

@@ -33,7 +33,7 @@ func (api *inhumanApi) Flow(key string) ([]models.App, error) {
 		"query": key,
 		"hl": api.config.Hl,
 		"gl": api.config.Gl,
-		"count": api.config.AppsCount,
+		"count": api.config.ItemsCount,
 	}), WithResponseType(&apps), WithApikey(api.config.Key), WithUrl(api.config.Url))
 
 	if err != nil {

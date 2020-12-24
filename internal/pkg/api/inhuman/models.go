@@ -10,7 +10,7 @@ import (
 type StoreApp struct {
 	ID             string              `json:"id,omitempty"`
 	Developer      string              `json:"developer,omitempty"`
-	DeveloperId    string              `json:"developer_id,omitempty"`
+	DeveloperId    string              `json:"developerId,omitempty"`
 	Title          string              `json:"title,omitempty"`
 	Categories     []string            `json:"genres,omitempty"`
 	Price          string              `json:"price,omitempty"`
@@ -25,6 +25,66 @@ type StoreApp struct {
 	ContentRating  ContentRating       `json:"contentRating,omitempty"`
 	Website        string              `json:"website,omitempty"`
 	PrivacyPolicy  string              `json:"privacyPolicy,omitempty"`
+}
+
+func (sp StoreApp) ToModel() models.App {
+	screenshots := make([]string, len(sp.Screenshots))
+	i := 0
+	for k, v := range sp.Screenshots {
+		s := map[string]interface{}{
+			"Device":      k,
+			"Screenshots": v,
+		}
+		b, err := json.Marshal(s)
+		if err != nil {
+			panic(err)
+		}
+		screenshots[i] = string(b)
+		i++
+	}
+
+	histogram := make([]string, len(sp.UserRating.Histogram))
+	for i, v := range sp.UserRating.Histogram {
+		histogram[i] = fmt.Sprintf("%.0f", v)
+	}
+
+	var recentChange string
+	var lastUpdateDate string
+	var version string
+	{
+		if len(sp.VersionHistory) > 0 {
+			lastChange := sp.VersionHistory[0]
+			recentChange = lastChange.ReleaseNotes
+			lastUpdateDate = lastChange.Date
+			version = lastChange.Version
+		}
+	}
+
+	return models.App{
+		Bundle:            sp.ID,
+		DeveloperId:       sp.DeveloperId,
+		Developer:         sp.Developer,
+		Title:             sp.Title,
+		Categories:        strings.Join(sp.Categories, ", "),
+		Price:             sp.Price,
+		Picture:           sp.Image,
+		Screenshots:       screenshots,
+		Rating:            fmt.Sprintf("%.1f", sp.UserRating.Value),
+		ReviewCount:       fmt.Sprintf("%.0f", sp.UserRating.RatingCount),
+		RatingHistogram:   histogram,
+		Description:       sp.Description,
+		RecentChanges:     recentChange,
+		ReleaseDate:       sp.ReleaseDate,
+		LastUpdateDate:    lastUpdateDate,
+		AppSize:           fmt.Sprint(sp.AppSize),
+		Version:           version,
+		AndroidVersion:    sp.Version,
+		ContentRating:     sp.ContentRating.Value,
+		DeveloperContacts: models.DeveloperContacts{
+			Contacts: sp.Website,
+		},
+		PrivacyPolicy:     sp.PrivacyPolicy,
+	}
 }
 
 type AppVersionChanges struct {
@@ -44,62 +104,6 @@ type ContentRating struct {
 }
 
 func CreateFromStore(m StoreApp) models.App {
-	screenshots := make([]string, len(m.Screenshots))
-	i := 0
-	for k, v := range m.Screenshots {
-		s := map[string]interface{}{
-			"Device":      k,
-			"Screenshots": v,
-		}
-		b, err := json.Marshal(s)
-		if err != nil {
-			panic(err)
-		}
-		screenshots[i] = string(b)
-		i++
-	}
-
-	histogram := make([]string, len(m.UserRating.Histogram))
-	for i, v := range m.UserRating.Histogram {
-		histogram[i] = fmt.Sprintf("%.0f", v)
-	}
-
-	var recentChange string
-	var lastUpdateDate string
-	var version string
-	{
-		if len(m.VersionHistory) > 0 {
-			lastChange := m.VersionHistory[0]
-			recentChange = lastChange.ReleaseNotes
-			lastUpdateDate = lastChange.Date
-			version = lastChange.Version
-		}
-	}
-
-	return models.App{
-		Bundle:            m.ID,
-		DeveloperId:       m.DeveloperId,
-		Developer:         m.Developer,
-		Title:             m.Title,
-		Categories:        strings.Join(m.Categories, ", "),
-		Price:             m.Price,
-		Picture:           m.Image,
-		Screenshots:       screenshots,
-		Rating:            fmt.Sprintf("%.0f", m.UserRating.Value),
-		ReviewCount:       fmt.Sprintf("%.0f", m.UserRating.RatingCount),
-		RatingHistogram:   histogram,
-		Description:       m.Description,
-		RecentChanges:     recentChange,
-		ReleaseDate:       m.ReleaseDate,
-		LastUpdateDate:    lastUpdateDate,
-		AppSize:           fmt.Sprint(m.AppSize),
-		Version:           version,
-		AndroidVersion:    m.Version,
-		ContentRating:     m.ContentRating.Value,
-		DeveloperContacts: models.DeveloperContacts{
-			Contacts: m.Website,
-		},
-		PrivacyPolicy:     m.PrivacyPolicy,
-	}
+	return m.ToModel()
 }
 

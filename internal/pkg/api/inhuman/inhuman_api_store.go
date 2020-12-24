@@ -10,47 +10,48 @@ type inhumanApiStore struct {
 	config Config
 }
 
-func (i *inhumanApiStore) App(bundle string) (models.App, error) {
+func (ias *inhumanApiStore) App(bundle string) (models.App, error) {
 	var app StoreApp
-	err := Request("ios_bundle", "GET", WithQueryParams(map[string]interface{} {
+	err := Request("ios_bundle", "GET", WithQueryParams(map[string]interface{}{
 		"q": bundle,
-		"l": i.config.Gl,
-	}), WithApikey(i.config.Key), WithUrl(i.config.Url), WithResponseType(&app))
+		"l": ias.config.Gl,
+	}), WithApikey(ias.config.Key), WithUrl(ias.config.Url), WithResponseType(&app))
 	if err != nil {
 		return models.App{}, err
 	}
 
-	return CreateFromStore(app), nil
+	return app.ToModel(), nil
 }
 
-func (i *inhumanApiStore) Flow(key string) ([]models.App, error) {
+func (ias *inhumanApiStore) Flow(key string) ([]models.App, error) {
 	var list []StoreApp
-	err := Request("ios_apps_list", "GET", WithQueryParams(map[string]interface{} {
-		"q": key,
-		"lang": i.config.Hl,
-		"geo": i.config.Gl,
-	}), WithApikey(i.config.Key), WithUrl(i.config.Url), WithResponseType(&list))
+	err := Request("ios_apps_list", "GET", WithQueryParams(map[string]interface{}{
+		"q":    key,
+		"o":    ias.config.ItemsCount,
+		"lang": ias.config.Hl,
+		"geo":  ias.config.Gl,
+	}), WithApikey(ias.config.Key), WithUrl(ias.config.Url), WithResponseType(&list))
 	if err != nil {
 		return nil, err
 	}
 
 	apps := make([]models.App, len(list))
 	for i, v := range list {
-		apps[i] = CreateFromStore(v)
+		apps[i] = v.ToModel()
 	}
 
 	return apps, nil
 }
 
-func (i *inhumanApiStore) Charts(ctx context.Context, chart models.Category) ([]string, error) {
+func (ias *inhumanApiStore) Charts(ctx context.Context, chart models.Category) ([]string, error) {
 	cat, subcat := chart.Split()
 	var list []map[string]interface{}
-	err := Request("ios/collections", "POST", WithData(map[string]interface{} {
-		"cat": cat,
-		"subcat": subcat,
-		"count": 200,
-		"country": i.config.Gl,
-	}), WithUrl(i.config.Url), WithApikey(i.config.Key), WithResponseType(&list))
+	err := Request("ios/collections", "POST", WithData(map[string]interface{}{
+		"cat":     cat,
+		"subCat":  subcat,
+		"count":   ias.config.ItemsCount,
+		"country": ias.config.Gl,
+	}), WithUrl(ias.config.Url), WithApikey(ias.config.Key), WithResponseType(&list))
 	if err != nil {
 		return nil, err
 	}
@@ -72,6 +73,3 @@ func NewApiStore(config Config) *inhumanApiStore {
 		config: config,
 	}
 }
-
-
-

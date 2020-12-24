@@ -27,3 +27,13 @@ func TestConfig_ShouldOverwriteAlreadyExistingParams(t *testing.T) {
 	assert.Equal(t, "hello", c.Api.Key)
 }
 
+func TestNewProxy_ShouldReturnCorrectInstance(t *testing.T) {
+	p := config.NewProxy("http://1d213:asddasd@14.23.51.22:1322")
+	assert.Equal(t, "http://1d213:asddasd@14.23.51.22:1322", p.Http)
+	assert.Equal(t, "https://1d213:asddasd@14.23.51.22:1322", p.Https)
+
+	p = config.NewProxy("https://1d213:asddasd@14.23.51.22:1322")
+	assert.Equal(t, "http://1d213:asddasd@14.23.51.22:1322", p.Http)
+	assert.Equal(t, "https://1d213:asddasd@14.23.51.22:1322", p.Https)
+}
+

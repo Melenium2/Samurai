@@ -5,6 +5,7 @@ import (
 	"Samurai/internal/pkg/api"
 	"Samurai/internal/pkg/api/inhuman"
 	"Samurai/internal/pkg/api/mobilerpc"
+	"Samurai/internal/pkg/api/models"
 	"Samurai/internal/pkg/db"
 	"Samurai/internal/pkg/executor"
 	"Samurai/internal/pkg/logus"
@@ -56,20 +57,20 @@ func (m mock_repo) InsertTx(tx pgx.Tx, ctx context.Context, data interface{}) (i
 type mock_api struct {
 }
 
-func (m mock_api) Charts(ctx context.Context, chart mobilerpc.Category) ([]string, error) {
+func (m mock_api) Charts(ctx context.Context, chart models.Category) ([]string, error) {
 	return []string {"bundle1", "com.app", "bundle2"}, nil
 }
 
-func (m mock_api) App(bundle string) (*inhuman.App, error) {
-	return &inhuman.App{
+func (m mock_api) App(bundle string) (models.App, error) {
+	return models.App{
 		Bundle: "com.app",
 		Description: "123",
 		Categories: "GAME_RACING",
 	}, nil
 }
 
-func (m mock_api) Flow(key string) ([]inhuman.App, error) {
-	return []inhuman.App { {Bundle: "com.app" }, {Bundle: "bundle1"}, {Bundle: "bundle2" } }, nil
+func (m mock_api) Flow(key string) ([]models.App, error) {
+	return []models.App { {Bundle: "com.app" }, {Bundle: "bundle1"}, {Bundle: "bundle2" } }, nil
 }
 
 func TestSamurai_NewApp_ShouldInsertNewAppToDb_NoError(t *testing.T) {
@@ -79,7 +80,7 @@ func TestSamurai_NewApp_ShouldInsertNewAppToDb_NoError(t *testing.T) {
 	}
 	ex := executor.New(c, logus.NewEmptyLogger(), mock_api{}, &mock_repo{appdb: make(map[int]db.App)})
 
-	id, err := ex.NewApp(context.Background(), &inhuman.App{Bundle: "123"})
+	id, err := ex.NewApp(context.Background(), models.App{Bundle: "123"})
 	assert.NoError(t, err)
 	assert.Equal(t, 1, id)
 }
@@ -93,7 +94,7 @@ func TestSamurai_UpdateMeta_ShouldInsertNewMetaInfoToDb_NoError(t *testing.T) {
 	ex := executor.New(c, logus.NewEmptyLogger(), mock_api{}, repo)
 	ex.TaskId = 1
 
-	err := ex.UpdateMeta(context.Background(), &inhuman.App{Description: "123"})
+	err := ex.UpdateMeta(context.Background(), models.App{Description: "123"})
 	assert.NoError(t, err)
 
 	meta := repo.metadb[1]
@@ -240,7 +241,7 @@ func TestSamurai_NewApp_ShouldInsertNewRowToDb_NoError(t *testing.T) {
 	ex := executor.NewDefault(c, logus.NewEmptyLogger())
 
 
-	id, err := ex.NewApp(context.Background(), &inhuman.App{
+	id, err := ex.NewApp(context.Background(), models.App{
 		Bundle: "com.com.com",
 	})
 
@@ -269,7 +270,7 @@ func TestSamurai_NewApp_ShouldntInsertRowCozContextEmpty_NoError(t *testing.T) {
 	ex := executor.New(c.App, logus.NewEmptyLogger(), mock_api{}, db.NewAppTracking(DatabaseConnection(c.Database)))
 
 	assert.Panics(t, func() {
-		ex.NewApp(nil, &inhuman.App{
+		ex.NewApp(nil, models.App{
 			Bundle: "com.com.com",
 		})
 	})
@@ -284,7 +285,7 @@ func TestSamurai_UpdateMeta_ShouldInsertNewRow_NoError(t *testing.T) {
 	tr := db.NewWithConnection(conn)
 	ex := executor.New(c.App, logus.NewEmptyLogger(), mock_api{}, tr)
 
-	app := &inhuman.App{
+	app := models.App{
 		Bundle: "com.com.com",
 		Description: "123",
 	}
@@ -316,7 +317,7 @@ func TestSamurai_UpdateTrack_ShouldInsertNewKeywordsAndCategories(t *testing.T) 
 	tr := db.NewWithConnection(conn)
 	ex := executor.New(c.App, logus.NewEmptyLogger(), mock_api{}, tr)
 
-	app := &inhuman.App{
+	app := models.App{
 		Bundle: "com.com.com",
 		Description: "123",
 	}
@@ -408,26 +409,29 @@ func TestSamurai_Tick_ShouldDoneOnTick(t *testing.T) {
 	c.App.Period = 1
 	c.App.Bundle = "com.narvii.amino.x89"
 	c.App.Keywords = []string {"game", "tale", "amino"}
+	c.App.ItemsCount = 250
 
 	conn := DatabaseConnection(c.Database)
 	tr := db.NewWithConnection(conn)
 
 	c.Api.GrpcAddress = "localhost"
 	c.Api.GrpcPort = "1000"
-	c.Api.GrpcAccount = &mobilerpc.Account{
+	c.Api.GrpcAccount = config.Account{
 		Login:    "ceciliamcalistervugt93@gmail.com",
 		Password: "Hbibcxzauig",
 		GsfId:    4554796460706948097,
 		Token:    "3QcbjsMii54dJ3NDYGlxLaQbC9HVpspXMkVlZ212GQBezdTiF1kdTIJ16Q80LQeYaJrjOw.",
 		Locale:   "ru_RU",
-		Proxy:    &mobilerpc.Proxy{
+		Proxy:    &config.Proxy{
 			Http:  "http://STqthJ:2odx6V@45.132.21.233:8000",
 			Https: "https://STqthJ:2odx6V@45.132.21.233:8000",
 		},
 		Device:   "whyred",
 	}
-	request := api.New(c.Api, c.App.Lang)
-
+	request := api.New(
+		mobilerpc.New(mobilerpc.FromConfig(c)),
+		inhuman.NewApiPlay(inhuman.FromConfig(c)),
+	)
 
 	ex := executor.New(c.App, logus.NewEmptyLogger(), request, tr)
 
@@ -476,6 +480,68 @@ func TestSamurai_Tick_ShouldDoneOnTick(t *testing.T) {
 	}
 }
 
+func TestSamurai_NewApp_ShouldInsertNewIosAppToDb(t *testing.T) {
+	c := config.New("../../../config/dev.yml")
+	c.App.Lang = "ru_RU"
+	c.App.Intensity = time.Hour
+	c.App.Period = 1
+	c.App.Bundle = "512939461"
+	c.App.Keywords = []string {"game", "sub", "way"}
+	c.App.ItemsCount = 200
+
+	conn := DatabaseConnection(c.Database)
+	tr := db.NewWithConnection(conn)
+
+	req := api.NewRequester(
+		inhuman.NewApiStore(inhuman.FromConfig(c)),
+	)
+
+	ex := executor.New(c.App, logus.NewEmptyLogger(), req, tr)
+
+	ctx, _ := context.WithTimeout(context.Background(), time.Second * 120)
+
+	assert.NoError(t, ex.Tick(ctx))
+	assert.Greater(t, ex.TaskId, 0)
+
+	row := conn.QueryRow(context.Background(), "select bundle from app_tracking where id = $1", ex.TaskId)
+	var bundle string
+	assert.NoError(t, row.Scan(&bundle))
+	assert.Equal(t, c.App.Bundle, bundle)
+
+	row = conn.QueryRow(context.Background(), "select description from meta_tracking where bundleid = $1", ex.TaskId)
+	var desc string
+	assert.NoError(t, row.Scan(&desc))
+	assert.NotEmpty(t, desc)
+
+	rows, err := conn.Query(context.Background(), "select type from keyword_tracking where bundleid = $1", ex.TaskId)
+	assert.NoError(t, err)
+
+	var keywords []string
+	for rows.Next() {
+		var k string
+		assert.NoError(t, rows.Scan(&k))
+		keywords = append(keywords, k)
+	}
+	rows.Close()
+	assert.Equal(t, 3, len(keywords))
+
+	rows, err = conn.Query(context.Background(), "select type from category_tracking where bundleid = $1", ex.TaskId)
+	assert.NoError(t, err)
+
+	var cats []string
+	for rows.Next() {
+		var c string
+		assert.NoError(t, rows.Scan(&c))
+		cats = append(cats, c)
+	}
+	rows.Close()
+	assert.Equal(t, 4, len(cats))
+
+	_, err = conn.Exec(context.Background(), "truncate table app_tracking, keyword_tracking, meta_tracking, category_tracking cascade")
+	if err != nil {
+		panic(err)
+	}
+}
 
 
 

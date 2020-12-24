@@ -3,6 +3,8 @@ package executor
 import (
 	"Samurai/config"
 	"Samurai/internal/pkg/api"
+	"Samurai/internal/pkg/api/inhuman"
+	"Samurai/internal/pkg/api/mobilerpc"
 	"Samurai/internal/pkg/api/models"
 	"Samurai/internal/pkg/db"
 	"Samurai/internal/pkg/logus"
@@ -40,7 +42,7 @@ func (w *Samurai) Work() error {
 	p := w.Config.Period
 	for w.isWorking && p > 0 {
 		// Why? Because DB clear ctx after transaction
-		ctxWithTimeout, _ := context.WithTimeout(w.ctx, time.Minute * 6)
+		ctxWithTimeout, _ := context.WithTimeout(w.ctx, time.Minute*6)
 
 		if err := w.Tick(ctxWithTimeout); err != nil {
 			return err
@@ -57,6 +59,7 @@ func (w *Samurai) Work() error {
 
 func (w *Samurai) Tick(ctx context.Context) error {
 	app, err := w.api.App(w.Config.Bundle)
+
 	if err != nil {
 		return err
 	}
@@ -102,7 +105,7 @@ func (w *Samurai) Tick(ctx context.Context) error {
 	return nil
 }
 
-func (w *Samurai) NewApp(ctx context.Context, app *models.App) (int, error) {
+func (w *Samurai) NewApp(ctx context.Context, app models.App) (int, error) {
 	return w.db.Insert(ctx, db.App{
 		Bundle:      app.Bundle,
 		Category:    app.Categories,
@@ -114,7 +117,7 @@ func (w *Samurai) NewApp(ctx context.Context, app *models.App) (int, error) {
 	})
 }
 
-func (w *Samurai) UpdateMeta(ctx context.Context, app *models.App) error {
+func (w *Samurai) UpdateMeta(ctx context.Context, app models.App) error {
 	_, err := w.db.Insert(ctx, db.Meta{
 		BundleId:         w.TaskId,
 		Title:            app.Title,
@@ -192,7 +195,10 @@ func New(config config.AppConfig, logger logus.Logus, api api.Requester, repo db
 }
 
 func NewDefault(config config.Config, logger logus.Logus) *Samurai {
-	requester := api.New(config.Api, config.App.Lang)
+	requester := api.New(
+		mobilerpc.New(mobilerpc.FromConfig(config)),
+		inhuman.NewApiPlay(inhuman.FromConfig(config)),
+	)
 	repo := db.NewWithConfig(config.Database)
 
 	return New(config.App, logger, requester, repo)
