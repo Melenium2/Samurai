@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"net/http"
 	"strings"
 )
@@ -51,7 +52,8 @@ func Request(endpoint, method string, options ...RequestOption) error {
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode > 200 {
-		return fmt.Errorf("external api response with status %d", resp.StatusCode)
+		b, _ := ioutil.ReadAll(resp.Body)
+		return fmt.Errorf("external api response with status %d, message = %s", resp.StatusCode, string(b))
 	}
 
 	if err := json.NewDecoder(resp.Body).Decode(&opt.response); err != nil {

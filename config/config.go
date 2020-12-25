@@ -2,6 +2,7 @@ package config
 
 import (
 	charts "Samurai/internal/pkg/api/mobilerpc/proto"
+	"Samurai/internal/pkg/api/models"
 	"gopkg.in/yaml.v3"
 	"io/ioutil"
 	"log"
@@ -66,7 +67,7 @@ func NewProxy(proxy string) *Proxy {
 
 func (p Proxy) ForGrpc() *charts.Proxy {
 	return &charts.Proxy{
-		Http: p.Http,
+		Http:  p.Http,
 		Https: p.Https,
 	}
 }
@@ -75,7 +76,6 @@ func (p *Proxy) Fill(proxy *charts.Proxy) {
 	p.Http = proxy.Http
 	p.Https = proxy.Https
 }
-
 
 //Database config
 type DBConfig struct {
@@ -105,6 +105,7 @@ type AppConfig struct {
 	Keywords  []string      `yaml:",flow"`
 	// Keywords or application request count from external api
 	ItemsCount int `yaml:"count"`
+	Categories models.Collection
 }
 
 //Application config
@@ -179,6 +180,9 @@ func New(p ...string) Config {
 	}
 
 	config := Config{
+		App: AppConfig{
+			Categories: models.CategoriesGoogle,
+		},
 		Api: ApiConfig{
 			GrpcAccount: Account{},
 		},

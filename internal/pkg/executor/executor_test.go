@@ -417,14 +417,12 @@ func TestSamurai_Tick_ShouldDoneOnTick(t *testing.T) {
 	c.Api.GrpcAddress = "localhost"
 	c.Api.GrpcPort = "1000"
 	c.Api.GrpcAccount = config.Account{
-		Login:    "ceciliamcalistervugt93@gmail.com",
-		Password: "Hbibcxzauig",
-		GsfId:    4554796460706948097,
-		Token:    "3QcbjsMii54dJ3NDYGlxLaQbC9HVpspXMkVlZ212GQBezdTiF1kdTIJ16Q80LQeYaJrjOw.",
+		Login:    "markovskiiikhiura@gmail.com",
+		Password: "k4kdffz9m",
 		Locale:   "ru_RU",
 		Proxy:    &config.Proxy{
-			Http:  "http://STqthJ:2odx6V@45.132.21.233:8000",
-			Https: "https://STqthJ:2odx6V@45.132.21.233:8000",
+			Http:  "http://5AHKey:mPNZg8@45.11.127.53:8000",
+			Https: "https://5AHKey:mPNZg8@45.11.127.53:8000",
 		},
 		Device:   "whyred",
 	}
@@ -482,12 +480,14 @@ func TestSamurai_Tick_ShouldDoneOnTick(t *testing.T) {
 
 func TestSamurai_NewApp_ShouldInsertNewIosAppToDb(t *testing.T) {
 	c := config.New("../../../config/dev.yml")
+	k := []string {"game", "sub", "way"}
 	c.App.Lang = "ru_RU"
 	c.App.Intensity = time.Hour
 	c.App.Period = 1
 	c.App.Bundle = "512939461"
-	c.App.Keywords = []string {"game", "sub", "way"}
+	c.App.Keywords = k
 	c.App.ItemsCount = 200
+	c.App.Categories = models.CategoriesIos
 
 	conn := DatabaseConnection(c.Database)
 	tr := db.NewWithConnection(conn)
@@ -523,7 +523,7 @@ func TestSamurai_NewApp_ShouldInsertNewIosAppToDb(t *testing.T) {
 		keywords = append(keywords, k)
 	}
 	rows.Close()
-	assert.Equal(t, 3, len(keywords))
+	assert.Equal(t, len(k), len(keywords))
 
 	rows, err = conn.Query(context.Background(), "select type from category_tracking where bundleid = $1", ex.TaskId)
 	assert.NoError(t, err)
@@ -535,7 +535,7 @@ func TestSamurai_NewApp_ShouldInsertNewIosAppToDb(t *testing.T) {
 		cats = append(cats, c)
 	}
 	rows.Close()
-	assert.Equal(t, 4, len(cats))
+	assert.Equal(t, len(c.App.Categories.Get()) * 4, len(cats))
 
 	_, err = conn.Exec(context.Background(), "truncate table app_tracking, keyword_tracking, meta_tracking, category_tracking cascade")
 	if err != nil {

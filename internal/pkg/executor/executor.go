@@ -15,13 +15,6 @@ import (
 	"time"
 )
 
-var categories = []string{
-	"apps_topselling_free",
-	"apps_topgrossing",
-	"apps_movers_shakers",
-	"apps_topselling_paid",
-}
-
 type Worker interface {
 	Work() error
 	Done()
@@ -89,15 +82,18 @@ func (w *Samurai) Tick(ctx context.Context) error {
 		}
 	}
 
-	for _, subCat := range categories {
-		cat := models.NewCategory(app.Categories, subCat)
-		chart, err := w.api.Charts(ctx, cat)
-		if err != nil {
-			return err
-		}
-		pos := w.position(w.Config.Bundle, chart)
-		if err = w.UpdateTrack(ctx, pos, string(cat)); err != nil {
-			return err
+	appCategories := strings.Split(app.Categories, ", ")
+	for _, subCat := range w.Config.Categories.Get() {
+		for _, category := range appCategories {
+			cat := models.NewCategory(category, subCat)
+			chart, err := w.api.Charts(ctx, cat)
+			if err != nil {
+				return err
+			}
+			pos := w.position(w.Config.Bundle, chart)
+			if err = w.UpdateTrack(ctx, pos, string(cat)); err != nil {
+				return err
+			}
 		}
 	}
 

@@ -27,10 +27,10 @@ type StoreApp struct {
 	PrivacyPolicy  string              `json:"privacyPolicy,omitempty"`
 }
 
-func (sp StoreApp) ToModel() models.App {
-	screenshots := make([]string, len(sp.Screenshots))
+func (sa StoreApp) ToModel() models.App {
+	screenshots := make([]string, len(sa.Screenshots))
 	i := 0
-	for k, v := range sp.Screenshots {
+	for k, v := range sa.Screenshots {
 		s := map[string]interface{}{
 			"Device":      k,
 			"Screenshots": v,
@@ -43,8 +43,8 @@ func (sp StoreApp) ToModel() models.App {
 		i++
 	}
 
-	histogram := make([]string, len(sp.UserRating.Histogram))
-	for i, v := range sp.UserRating.Histogram {
+	histogram := make([]string, len(sa.UserRating.Histogram))
+	for i, v := range sa.UserRating.Histogram {
 		histogram[i] = fmt.Sprintf("%.0f", v)
 	}
 
@@ -52,8 +52,8 @@ func (sp StoreApp) ToModel() models.App {
 	var lastUpdateDate string
 	var version string
 	{
-		if len(sp.VersionHistory) > 0 {
-			lastChange := sp.VersionHistory[0]
+		if len(sa.VersionHistory) > 0 {
+			lastChange := sa.VersionHistory[0]
 			recentChange = lastChange.ReleaseNotes
 			lastUpdateDate = lastChange.Date
 			version = lastChange.Version
@@ -61,29 +61,29 @@ func (sp StoreApp) ToModel() models.App {
 	}
 
 	return models.App{
-		Bundle:            sp.ID,
-		DeveloperId:       sp.DeveloperId,
-		Developer:         sp.Developer,
-		Title:             sp.Title,
-		Categories:        strings.Join(sp.Categories, ", "),
-		Price:             sp.Price,
-		Picture:           sp.Image,
-		Screenshots:       screenshots,
-		Rating:            fmt.Sprintf("%.1f", sp.UserRating.Value),
-		ReviewCount:       fmt.Sprintf("%.0f", sp.UserRating.RatingCount),
-		RatingHistogram:   histogram,
-		Description:       sp.Description,
-		RecentChanges:     recentChange,
-		ReleaseDate:       sp.ReleaseDate,
-		LastUpdateDate:    lastUpdateDate,
-		AppSize:           fmt.Sprint(sp.AppSize),
-		Version:           version,
-		AndroidVersion:    sp.Version,
-		ContentRating:     sp.ContentRating.Value,
+		Bundle:          sa.ID,
+		DeveloperId:     sa.DeveloperId,
+		Developer:       sa.Developer,
+		Title:           sa.Title,
+		Categories:      strings.Join(sa.Categories, ", "),
+		Price:           sa.Price,
+		Picture:         sa.Image,
+		Screenshots:     screenshots,
+		Rating:          fmt.Sprintf("%.1f", sa.UserRating.Value),
+		ReviewCount:     fmt.Sprintf("%.0f", sa.UserRating.RatingCount),
+		RatingHistogram: histogram,
+		Description:     sa.Description,
+		RecentChanges:   recentChange,
+		ReleaseDate:     sa.ReleaseDate,
+		LastUpdateDate:  lastUpdateDate,
+		AppSize:         fmt.Sprint(sa.AppSize),
+		Version:         version,
+		AndroidVersion:  sa.Version,
+		ContentRating:   sa.ContentRating.Value,
 		DeveloperContacts: models.DeveloperContacts{
-			Contacts: sp.Website,
+			Contacts: sa.Website,
 		},
-		PrivacyPolicy:     sp.PrivacyPolicy,
+		PrivacyPolicy: sa.PrivacyPolicy,
 	}
 }
 
@@ -94,7 +94,7 @@ type AppVersionChanges struct {
 }
 
 type StoreRating struct {
-	Value       float32 `json:"value,omitempty"`
+	Value       float32   `json:"value,omitempty"`
 	RatingCount float32   `json:"ratingCount,omitempty"`
 	Histogram   []float32 `json:"histogram,omitempty"`
 }
@@ -106,4 +106,3 @@ type ContentRating struct {
 func CreateFromStore(m StoreApp) models.App {
 	return m.ToModel()
 }
-
