@@ -28,7 +28,7 @@ func (api *inhumanApi) App(bundle string) (models.App, error) {
 
 // Method calls api and return top N application from main page
 func (api *inhumanApi) Flow(key string) ([]models.App, error) {
-	apps := make([]models.App, 0)
+	var apps []models.App
 	err := Request("mainPage", "post", WithData(map[string]interface{} {
 		"query": key,
 		"hl": api.config.Hl,

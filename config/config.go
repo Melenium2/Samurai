@@ -11,6 +11,13 @@ import (
 	"time"
 )
 
+type TrackingType uint
+
+const (
+	AppStore TrackingType = iota
+	GooglePlay
+)
+
 type Account struct {
 	Login    string
 	Password string
@@ -121,6 +128,13 @@ type Config struct {
 func (c Config) View() {
 	log.Print("____START")
 	log.Print("Environments: ", c.Envs)
+
+	log.Print("---------------------------")
+
+	log.Print("***DEPENDENCY***")
+	log.Print("\tApiUrl: ", c.Api.Url)
+	log.Print("\tGrpcPort: ", c.Api.GrpcPort)
+	log.Print("\tGrpcAddress: ", c.Api.GrpcAddress)
 
 	log.Print("---------------------------")
 

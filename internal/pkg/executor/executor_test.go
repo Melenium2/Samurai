@@ -407,8 +407,8 @@ func TestSamurai_Tick_ShouldDoneOnTick(t *testing.T) {
 	c.App.Lang = "ru_RU"
 	c.App.Intensity = time.Hour
 	c.App.Period = 1
-	c.App.Bundle = "com.narvii.amino.x89"
-	c.App.Keywords = []string {"game", "tale", "amino"}
+	c.App.Bundle = "com.duolingo"
+	c.App.Keywords = []string {"translate", "lingo", "english"}
 	c.App.ItemsCount = 250
 
 	conn := DatabaseConnection(c.Database)
@@ -480,7 +480,7 @@ func TestSamurai_Tick_ShouldDoneOnTick(t *testing.T) {
 
 func TestSamurai_NewApp_ShouldInsertNewIosAppToDb(t *testing.T) {
 	c := config.New("../../../config/dev.yml")
-	k := []string {"game", "sub", "way"}
+	k := []string {"game", "sub", "way", "сабвей", "метро"}
 	c.App.Lang = "ru_RU"
 	c.App.Intensity = time.Hour
 	c.App.Period = 1

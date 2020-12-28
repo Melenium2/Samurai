@@ -101,6 +101,7 @@ func (w *Samurai) Tick(ctx context.Context) error {
 			w.logger.Log("error in flow", fmt.Sprintf("keyword '%s' response with: %s", k, err))
 			continue
 		}
+
 		bundles := w.bundles(keys)
 		pos := w.position(w.Config.Bundle, bundles)
 		if err = w.UpdateTrack(ctx, pos, k); err != nil {
