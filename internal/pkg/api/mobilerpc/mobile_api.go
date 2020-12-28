@@ -2,19 +2,13 @@ package mobilerpc
 
 import (
 	charts "Samurai/internal/pkg/api/mobilerpc/proto"
+	"Samurai/internal/pkg/api/models"
 	"context"
 	"fmt"
 	"google.golang.org/grpc"
 	"log"
 )
 
-// TODO
-// Что то с аккаунтом (откуда брать, через что сохранять)
-// Тесты
-
-type ChartApi interface {
-	Charts(ctx context.Context, chart Category) ([]string, error)
-}
 
 type mobileRpc struct {
 	Config
@@ -23,7 +17,7 @@ type mobileRpc struct {
 }
 
 // Get charts from external api
-func (rpc *mobileRpc) Charts(ctx context.Context, chart Category) ([]string, error) {
+func (rpc *mobileRpc) Charts(ctx context.Context, chart models.Category) ([]string, error) {
 	conn, err := rpc.MakeConnection()
 	if err != nil {
 		return nil, err

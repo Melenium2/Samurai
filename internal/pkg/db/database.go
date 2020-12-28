@@ -39,7 +39,7 @@ func (t *TrackingDatabase) Insert(ctx context.Context, data interface{}) (int, e
 	case Meta:
 		return t.meta.Insert(ctx, v)
 	case Track:
-		splited := strings.Split(v.Type, "_")
+		splited := strings.Split(v.Type, "|")
 		if len(splited) >= 2 {
 			return t.category.Insert(ctx, v)
 		}
@@ -57,7 +57,7 @@ func (t *TrackingDatabase) InsertTx(tx pgx.Tx, ctx context.Context, data interfa
 	case Meta:
 		return t.meta.InsertTx(tx, ctx, v)
 	case Track:
-		splited := strings.Split(v.Type, "_")
+		splited := strings.Split(v.Type, "|")
 		if len(splited) >= 2 {
 			return t.category.InsertTx(tx, ctx, v)
 		}

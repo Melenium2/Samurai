@@ -1,7 +1,7 @@
 package executor
 
 import (
-	"Samurai/internal/pkg/api/inhuman"
+	"Samurai/internal/pkg/api/models"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
@@ -9,7 +9,7 @@ import (
 func TestSamurai_Bundles_ShouldReturnOnlyBundles_NoError(t *testing.T) {
 	sam := Samurai{}
 
-	apps := []inhuman.App{
+	apps := []models.App{
 		{Bundle: "1"},
 		{Bundle: "2"},
 		{Bundle: "3"},

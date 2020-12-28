@@ -1,13 +1,88 @@
 package config
 
 import (
-	"Samurai/internal/pkg/api/mobilerpc"
+	charts "Samurai/internal/pkg/api/mobilerpc/proto"
+	"Samurai/internal/pkg/api/models"
 	"gopkg.in/yaml.v3"
 	"io/ioutil"
 	"log"
 	"os"
+	"strings"
 	"time"
 )
+
+type TrackingType uint
+
+const (
+	AppStore TrackingType = iota
+	GooglePlay
+)
+
+type Account struct {
+	Login    string
+	Password string
+	GsfId    int
+	Token    string
+	Locale   string
+	Proxy    *Proxy
+	Device   string
+}
+
+func (a Account) ForGrpc() *charts.Account {
+	var p *charts.Proxy
+	if a.Proxy != nil {
+		p = a.Proxy.ForGrpc()
+	}
+	return &charts.Account{
+		Login:    a.Login,
+		Password: a.Password,
+		GsfId:    int64(a.GsfId),
+		Token:    a.Token,
+		Locale:   a.Locale,
+		Proxy:    p,
+		Device:   a.Device,
+	}
+}
+
+func (a *Account) Fill(account *charts.Account) {
+	a.Login = account.Login
+	a.Password = account.Password
+	a.GsfId = int(account.GsfId)
+	a.Token = account.Token
+	a.Login = account.Locale
+	p := &Proxy{}
+	if account.Proxy != nil {
+		p.Fill(account.Proxy)
+	}
+	a.Proxy = p
+	a.Device = account.Device
+}
+
+type Proxy struct {
+	Http  string
+	Https string
+}
+
+func NewProxy(proxy string) *Proxy {
+	p := strings.Split(proxy, "//")
+
+	return &Proxy{
+		Http:  "http://" + p[1],
+		Https: "https://" + p[1],
+	}
+}
+
+func (p Proxy) ForGrpc() *charts.Proxy {
+	return &charts.Proxy{
+		Http:  p.Http,
+		Https: p.Https,
+	}
+}
+
+func (p *Proxy) Fill(proxy *charts.Proxy) {
+	p.Http = proxy.Http
+	p.Https = proxy.Https
+}
 
 //Database config
 type DBConfig struct {
@@ -25,7 +100,7 @@ type ApiConfig struct {
 	Key         string `yaml:"key"`
 	GrpcAddress string `yaml:"grpc_address"`
 	GrpcPort    string `yaml:"grpc_port"`
-	GrpcAccount *mobilerpc.Account
+	GrpcAccount Account
 }
 
 // Main config
@@ -35,6 +110,9 @@ type AppConfig struct {
 	Intensity time.Duration `yaml:"intensity"`
 	Lang      string        `yaml:"lang"`
 	Keywords  []string      `yaml:",flow"`
+	// Keywords or application request count from external api
+	ItemsCount int `yaml:"count"`
+	Categories models.Collection
 }
 
 //Application config
@@ -53,8 +131,15 @@ func (c Config) View() {
 
 	log.Print("---------------------------")
 
+	log.Print("***DEPENDENCY***")
+	log.Print("\tApiUrl: ", c.Api.Url)
+	log.Print("\tGrpcPort: ", c.Api.GrpcPort)
+	log.Print("\tGrpcAddress: ", c.Api.GrpcAddress)
+
+	log.Print("---------------------------")
+
 	log.Print("***ACCOUNT***")
-	log.Print("\tLogin:", c.Api.GrpcAccount.Login)
+	log.Print("\tLogin: ", c.Api.GrpcAccount.Login)
 	log.Print("\tPassword: ", c.Api.GrpcAccount.Password)
 	log.Print("\tToken: ", c.Api.GrpcAccount.Token)
 	log.Print("\tGSFID: ", c.Api.GrpcAccount.GsfId)
@@ -66,8 +151,8 @@ func (c Config) View() {
 
 	log.Print("***APPLICATION***")
 	log.Print("\tLanguage: ", c.App.Lang)
-	log.Print("\tIntensity ", c.App.Intensity)
-	log.Print("\tPeriod ", c.App.Period)
+	log.Print("\tIntensity: ", c.App.Intensity)
+	log.Print("\tPeriod: ", c.App.Period)
 	log.Print("\tKeywords: ", c.App.Keywords)
 	log.Print("\tBundle: ", c.App.Bundle)
 
@@ -109,8 +194,11 @@ func New(p ...string) Config {
 	}
 
 	config := Config{
+		App: AppConfig{
+			Categories: models.CategoriesGoogle,
+		},
 		Api: ApiConfig{
-			GrpcAccount: &mobilerpc.Account{},
+			GrpcAccount: Account{},
 		},
 	}
 	if err := yaml.Unmarshal(data, &config); err != nil {
@@ -139,7 +227,6 @@ func New(p ...string) Config {
 	if ok && v != "" {
 		config.Api.GrpcPort = v
 	}
-
 
 	return config
 }

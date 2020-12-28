@@ -5,21 +5,16 @@ import (
 	"Samurai/internal/pkg/api"
 	"Samurai/internal/pkg/api/inhuman"
 	"Samurai/internal/pkg/api/mobilerpc"
+	"Samurai/internal/pkg/api/models"
 	"Samurai/internal/pkg/db"
 	"Samurai/internal/pkg/logus"
+	"Samurai/internal/pkg/retry"
 	"context"
 	"fmt"
 	"log"
 	"strings"
 	"time"
 )
-
-var categories = []string{
-	"apps_topselling_free",
-	"apps_topgrossing",
-	"apps_movers_shakers",
-	"apps_topselling_paid",
-}
 
 type Worker interface {
 	Work() error
@@ -39,11 +34,14 @@ type Samurai struct {
 
 func (w *Samurai) Work() error {
 	p := w.Config.Period
+	var cancel context.CancelFunc
+	var ctxWithTimeout context.Context
 	for w.isWorking && p > 0 {
 		// Why? Because DB clear ctx after transaction
-		ctxWithTimeout, _ := context.WithTimeout(w.ctx, time.Minute * 6)
+		ctxWithTimeout, cancel = context.WithTimeout(w.ctx, time.Minute*6)
 
 		if err := w.Tick(ctxWithTimeout); err != nil {
+			cancel()
 			return err
 		}
 
@@ -51,16 +49,34 @@ func (w *Samurai) Work() error {
 		w.logger.LogMany(logus.NewLUnit("Work()", "process"), logus.NewLUnit(p, "times left"))
 		time.Sleep(w.Config.Intensity)
 	}
+	if cancel != nil {
+		cancel()
+	}
+
 	w.Done()
 
 	return nil
 }
 
 func (w *Samurai) Tick(ctx context.Context) error {
-	app, err := w.api.App(w.Config.Bundle)
+	roptions := []retry.Option{
+		retry.WithContext(ctx),
+		retry.WithFactor(1.6),
+		retry.WithMaxAttempts(10),
+		retry.WithMaxRetryTime(time.Minute * 3),
+	}
+
+	var app models.App
+	var err error
+	err = retry.Go(func() error {
+		app, err = w.api.App(w.Config.Bundle)
+		return err
+	}, roptions...)
+
 	if err != nil {
 		return err
 	}
+
 	if w.TaskId == 0 {
 		id, err := w.NewApp(ctx, app)
 		if err != nil {
@@ -75,11 +91,17 @@ func (w *Samurai) Tick(ctx context.Context) error {
 	}
 
 	for _, k := range w.Config.Keywords {
-		keys, err := w.api.Flow(k)
+		var keys []models.App
+		err = retry.Go(func() error {
+			keys, err = w.api.Flow(k)
+			return err
+		}, roptions...)
+
 		if err != nil {
 			w.logger.Log("error in flow", fmt.Sprintf("keyword '%s' response with: %s", k, err))
 			continue
 		}
+
 		bundles := w.bundles(keys)
 		pos := w.position(w.Config.Bundle, bundles)
 		if err = w.UpdateTrack(ctx, pos, k); err != nil {
@@ -87,15 +109,23 @@ func (w *Samurai) Tick(ctx context.Context) error {
 		}
 	}
 
-	for _, subCat := range categories {
-		cat := mobilerpc.NewCategory(app.Categories, subCat)
-		chart, err := w.api.Charts(ctx, cat)
-		if err != nil {
-			return err
-		}
-		pos := w.position(w.Config.Bundle, chart)
-		if err = w.UpdateTrack(ctx, pos, string(cat)); err != nil {
-			return err
+	appCategories := strings.Split(app.Categories, ", ")
+	for _, subCat := range w.Config.Categories.Get() {
+		for _, category := range appCategories {
+			cat := models.NewCategory(category, subCat)
+			var chart []string
+			err = retry.Go(func() error {
+				chart, err = w.api.Charts(ctx, cat)
+				return err
+			}, roptions...)
+
+			if err != nil {
+				return err
+			}
+			pos := w.position(w.Config.Bundle, chart)
+			if err = w.UpdateTrack(ctx, pos, string(cat)); err != nil {
+				return err
+			}
 		}
 	}
 
@@ -103,7 +133,7 @@ func (w *Samurai) Tick(ctx context.Context) error {
 	return nil
 }
 
-func (w *Samurai) NewApp(ctx context.Context, app *inhuman.App) (int, error) {
+func (w *Samurai) NewApp(ctx context.Context, app models.App) (int, error) {
 	return w.db.Insert(ctx, db.App{
 		Bundle:      app.Bundle,
 		Category:    app.Categories,
@@ -115,7 +145,7 @@ func (w *Samurai) NewApp(ctx context.Context, app *inhuman.App) (int, error) {
 	})
 }
 
-func (w *Samurai) UpdateMeta(ctx context.Context, app *inhuman.App) error {
+func (w *Samurai) UpdateMeta(ctx context.Context, app models.App) error {
 	_, err := w.db.Insert(ctx, db.Meta{
 		BundleId:         w.TaskId,
 		Title:            app.Title,
@@ -161,7 +191,7 @@ func (w *Samurai) Done() {
 	log.Print("Shutdown...")
 }
 
-func (w *Samurai) bundles(apps []inhuman.App) []string {
+func (w *Samurai) bundles(apps []models.App) []string {
 	r := make([]string, len(apps))
 	for i := 0; i < len(apps); i++ {
 		r[i] = apps[i].Bundle
@@ -193,7 +223,10 @@ func New(config config.AppConfig, logger logus.Logus, api api.Requester, repo db
 }
 
 func NewDefault(config config.Config, logger logus.Logus) *Samurai {
-	requester := api.New(config.Api, config.App.Lang)
+	requester := api.New(
+		mobilerpc.New(mobilerpc.FromConfig(config)),
+		inhuman.NewApiPlay(inhuman.FromConfig(config)),
+	)
 	repo := db.NewWithConfig(config.Database)
 
 	return New(config.App, logger, requester, repo)

@@ -3,6 +3,7 @@ package inhuman_test
 import (
 	"Samurai/config"
 	"Samurai/internal/pkg/api/inhuman"
+	"Samurai/internal/pkg/api/models"
 	"bytes"
 	"encoding/json"
 	"errors"
@@ -20,8 +21,8 @@ type inhuman_api_mock struct {
 	ExpectedBody interface{}
 }
 
-func (m *inhuman_api_mock) Flow(key string) ([]inhuman.App, error) {
-	apps := make([]inhuman.App, 0)
+func (m *inhuman_api_mock) Flow(key string) ([]models.App, error) {
+	apps := make([]models.App, 0)
 	err := m.Request(m.Endpoint("mainPage"), "post", map[string]interface{} {
 		"query": key,
 		"hl": "13",
@@ -36,8 +37,8 @@ func (m *inhuman_api_mock) Flow(key string) ([]inhuman.App, error) {
 	return apps, nil
 }
 
-func (m *inhuman_api_mock) App(bundle string) (*inhuman.App, error) {
-	var app *inhuman.App
+func (m *inhuman_api_mock) App(bundle string) (*models.App, error) {
+	var app *models.App
 	err := m.Request(m.Endpoint("bundle"), "post", map[string]string{
 		"query": bundle,
 		"hl":    "en",
@@ -89,7 +90,7 @@ Successful test
 func TestApp_ShouldMakeRequestToExternalApiAndWriteToAppResult_NoErrors(t *testing.T) {
 	api := &inhuman_api_mock{
 		ExpectedCode: 200,
-		ExpectedBody: &inhuman.App{
+		ExpectedBody: &models.App{
 			Bundle:     "123",
 			Categories: "GAME",
 		},
@@ -115,8 +116,8 @@ func TestRequest_ShouldMakeRequestToExternalApi_NoErrors(t *testing.T) {
 func TestFlow_ShouldReturnListWithApplications_NoError(t *testing.T) {
 	api := &inhuman_api_mock{
 		ExpectedCode: 200,
-		ExpectedBody: []inhuman.App {
-			inhuman.App{ Bundle: "123"}, { Bundle: "222"},
+		ExpectedBody: []models.App {
+			models.App{ Bundle: "123"}, { Bundle: "222"},
 		},
 	}
 	apps, err := api.Flow("car")
@@ -133,8 +134,8 @@ type inhuman_api_mock_fail struct {
 	ExpectedResponseBody interface{}
 }
 
-func (m *inhuman_api_mock_fail) Flow(key string) ([]inhuman.App, error) {
-	apps := make([]inhuman.App, 0)
+func (m *inhuman_api_mock_fail) Flow(key string) ([]models.App, error) {
+	apps := make([]models.App, 0)
 	err := m.Request(m.Endpoint("mainPage"), "post", map[string]interface{} {
 		"query": key,
 		"hl": "13",
@@ -149,7 +150,7 @@ func (m *inhuman_api_mock_fail) Flow(key string) ([]inhuman.App, error) {
 	return apps, nil
 }
 
-func (m *inhuman_api_mock_fail) App(bundle string) (*inhuman.App, error) {
+func (m *inhuman_api_mock_fail) App(bundle string) (*models.App, error) {
 	return nil, m.Request(m.Endpoint("bundle"), "post", struct{}{}, struct{}{})
 }
 
@@ -217,7 +218,7 @@ func TestEndpoint_ShouldReturnUnpredictableBody_Error(t *testing.T) {
 		ExpectedCode:         200,
 		ExpectedResponseBody: `{ "bundle": "bundle" }]`,
 	}
-	err := api.Request("/bundle", "get", struct{}{}, &inhuman.App{})
+	err := api.Request("/bundle", "get", struct{}{}, &models.App{})
 	assert.Error(t, err)
 	assert.Equal(t, "json: cannot unmarshal string into Go value of type inhuman.App", err.Error())
 }
@@ -227,7 +228,7 @@ func TestEndpoint_ShouldReturnErrorCozIncorrectData_Error(t *testing.T) {
 		ExpectedCode:         200,
 		ExpectedResponseBody: `{ "bundle": "bundle" }`,
 	}
-	err := api.Request("/bundle", "get", make(chan int), &inhuman.App{})
+	err := api.Request("/bundle", "get", make(chan int), &models.App{})
 	assert.Error(t, err)
 }
 
@@ -259,26 +260,19 @@ func Config() inhuman.Config {
 	c := config.New("../../../../config/dev.yml")
 
 	return inhuman.Config{
-		Url:       c.Api.Url,
-		Key:       c.Api.Key,
-		Hl:        "ru",
-		Gl:        "ru",
-		AppsCount: 250,
+		Url:        c.Api.Url,
+		Key:        c.Api.Key,
+		Hl:         "ru",
+		Gl:         "ru",
+		ItemsCount: 250,
 	}
 }
 
 var bundle = "com.and.wareternal"
 
-func TestEndpoint_ShouldConcatDefaultUrlAndEndpoint_NoError(t *testing.T) {
-	c := Config()
-	api := inhuman.New(c)
-	res := api.Endpoint("bundle")
-	assert.Equal(t, c.Url + "/bundle", res)
-}
-
 func TestApp_ShouldReturnAppInformationFromApi_NoError(t *testing.T) {
 	c := Config()
-	api := inhuman.New(c)
+	api := inhuman.NewApiPlay(c)
 	res, err := api.App(bundle)
 	assert.NoError(t, err)
 	assert.NotNil(t, res)
@@ -287,7 +281,7 @@ func TestApp_ShouldReturnAppInformationFromApi_NoError(t *testing.T) {
 
 func TestFlow_ShouldReturnMainPageApps_NoError(t *testing.T) {
 	c := Config()
-	api := inhuman.New(c)
+	api := inhuman.NewApiPlay(c)
 	res, err := api.Flow("car")
 	assert.NoError(t, err)
 	assert.NotNil(t, res)
@@ -298,7 +292,7 @@ func TestFlow_ShouldReturnMainPageApps_NoError(t *testing.T) {
 func TestFlow_ShouldReturnAppsFor10Keys_NoError(t *testing.T) {
 	ti := time.Now()
 	c := Config()
-	api := inhuman.New(c)
+	api := inhuman.NewApiPlay(c)
 	keys := []string {"car", "cart", "car games", "game for kids", "russian mobiles", "anime", "anime games", "wallpapers", "key", "door"}
 	for _, k := range keys {
 		res, err := api.Flow(k)
@@ -311,14 +305,14 @@ func TestFlow_ShouldReturnAppsFor10Keys_NoError(t *testing.T) {
 }
 
 func TestApp_ShouldReturnErrorIfBundleIsWrong_Error(t *testing.T) {
-	api := inhuman.New(Config())
+	api := inhuman.NewApiPlay(Config())
 	res, err := api.App("")
 	assert.Error(t, err)
 	assert.Nil(t, res)
 }
 
 func TestApp_ShouldReturnErrorCozKeyIsIncorrect_Error(t *testing.T) {
-	api := inhuman.New(Config())
+	api := inhuman.NewApiPlay(Config())
 	res, err := api.App("dfghadsvadkasdasdskjdsnkjdna123ad;lmsakda")
 	assert.Error(t, err)
 	assert.Nil(t, res)
