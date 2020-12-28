@@ -7,6 +7,7 @@ require (
 	github.com/golang/protobuf v1.4.3
 	github.com/jackc/pgtype v1.6.1
 	github.com/jackc/pgx/v4 v4.9.2
+	github.com/spf13/cobra v1.1.1 // indirect
 	github.com/stretchr/testify v1.6.1
 	go.uber.org/atomic v1.6.0
 	google.golang.org/grpc v1.33.2

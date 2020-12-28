@@ -8,6 +8,7 @@ import (
 	"Samurai/internal/pkg/api/models"
 	"Samurai/internal/pkg/db"
 	"Samurai/internal/pkg/logus"
+	"Samurai/internal/pkg/retry"
 	"context"
 	"fmt"
 	"log"
@@ -33,11 +34,14 @@ type Samurai struct {
 
 func (w *Samurai) Work() error {
 	p := w.Config.Period
+	var cancel context.CancelFunc
+	var ctxWithTimeout context.Context
 	for w.isWorking && p > 0 {
 		// Why? Because DB clear ctx after transaction
-		ctxWithTimeout, _ := context.WithTimeout(w.ctx, time.Minute*6)
+		ctxWithTimeout, cancel = context.WithTimeout(w.ctx, time.Minute*6)
 
 		if err := w.Tick(ctxWithTimeout); err != nil {
+			cancel()
 			return err
 		}
 
@@ -45,17 +49,34 @@ func (w *Samurai) Work() error {
 		w.logger.LogMany(logus.NewLUnit("Work()", "process"), logus.NewLUnit(p, "times left"))
 		time.Sleep(w.Config.Intensity)
 	}
+	if cancel != nil {
+		cancel()
+	}
+
 	w.Done()
 
 	return nil
 }
 
 func (w *Samurai) Tick(ctx context.Context) error {
-	app, err := w.api.App(w.Config.Bundle)
+	roptions := []retry.Option{
+		retry.WithContext(ctx),
+		retry.WithFactor(1.6),
+		retry.WithMaxAttempts(10),
+		retry.WithMaxRetryTime(time.Minute * 3),
+	}
+
+	var app models.App
+	var err error
+	err = retry.Go(func() error {
+		app, err = w.api.App(w.Config.Bundle)
+		return err
+	}, roptions...)
 
 	if err != nil {
 		return err
 	}
+
 	if w.TaskId == 0 {
 		id, err := w.NewApp(ctx, app)
 		if err != nil {
@@ -70,7 +91,12 @@ func (w *Samurai) Tick(ctx context.Context) error {
 	}
 
 	for _, k := range w.Config.Keywords {
-		keys, err := w.api.Flow(k)
+		var keys []models.App
+		err = retry.Go(func() error {
+			keys, err = w.api.Flow(k)
+			return err
+		}, roptions...)
+
 		if err != nil {
 			w.logger.Log("error in flow", fmt.Sprintf("keyword '%s' response with: %s", k, err))
 			continue
@@ -86,7 +112,12 @@ func (w *Samurai) Tick(ctx context.Context) error {
 	for _, subCat := range w.Config.Categories.Get() {
 		for _, category := range appCategories {
 			cat := models.NewCategory(category, subCat)
-			chart, err := w.api.Charts(ctx, cat)
+			var chart []string
+			err = retry.Go(func() error {
+				chart, err = w.api.Charts(ctx, cat)
+				return err
+			}, roptions...)
+
 			if err != nil {
 				return err
 			}
