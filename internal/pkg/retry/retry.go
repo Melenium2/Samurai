@@ -9,6 +9,9 @@ import (
 
 type RetryFunc func() error
 
+// Go is programming language... Bun this function call RetryFunc
+// until max attempts or max retry time. Then return list with all error
+// messages during the retry process
 func Go(retryFunc RetryFunc, options ...Option) error {
 	opt := defaultOptions()
 

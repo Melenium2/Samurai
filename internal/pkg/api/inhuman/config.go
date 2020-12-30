@@ -5,6 +5,7 @@ import (
 	"strings"
 )
 
+// Config contains fields required for requests to external api
 type Config struct {
 	Url        string
 	Key        string
@@ -13,6 +14,7 @@ type Config struct {
 	ItemsCount int
 }
 
+// Generate Config from config.Config
 func FromConfig(config config.Config) Config {
 	splitedLang := strings.Split(config.App.Lang, "_")
 	hl, gl := strings.ToLower(splitedLang[0]), strings.ToLower(splitedLang[1])

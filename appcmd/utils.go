@@ -146,6 +146,9 @@ func loadTracker(c config.Config, a api.Requester) executor.Worker {
 	return ex
 }
 
+// connection create *pgx.Conn by config.DBConfig
+// Method also create schema of database which is contained in
+// the config.Schema file
 func connection(config config.DBConfig) (*pgx.Conn, error) {
 	url, err := db.ConnectionUrl(config)
 	if err != nil {
@@ -164,6 +167,7 @@ func connection(config config.DBConfig) (*pgx.Conn, error) {
 	return conn, nil
 }
 
+// configureLogger return murlog.Logger configured by default
 func configureLogger() murlog.Logger {
 	c := murlog.NewConfig()
 	c.TimePref(time.RFC822)
@@ -172,6 +176,8 @@ func configureLogger() murlog.Logger {
 	return murlog.NewLogger(c)
 }
 
+// loadTrackId search in database app with same params bundle, locale, period
+// if this app exists then return id of this app, otherwise return 0
 func loadTrackId(conn *pgx.Conn, bundle, locale string, period int) (int, error) {
 	row := conn.QueryRow(
 		context.Background(),

@@ -15,11 +15,11 @@ import (
 
 func TestInhumanApiStore_App_ShouldReturnInstanceOfAppWithoutError(t *testing.T) {
 	config := Config()
-	config.Hl = "fr"
-	config.Gl = "fr"
+	config.Hl = "de"
+	config.Gl = "de"
 
 	api := inhuman.NewApiStore(config)
-	bundle := "956857223"
+	bundle := "1504417378"
 	app, err := api.App(bundle)
 	assert.NoError(t, err)
 	assert.NotNil(t, app)

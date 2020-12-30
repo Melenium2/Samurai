@@ -16,7 +16,7 @@ type mobileRpc struct {
 	grpcContext RpcContext
 }
 
-// Get charts from external api
+// Charts get []string (apps) from external api by given models.Category
 func (rpc *mobileRpc) Charts(ctx context.Context, chart models.Category) ([]string, error) {
 	conn, err := rpc.MakeConnection()
 	if err != nil {

@@ -13,11 +13,13 @@ import (
 
 type TrackingType uint
 
+// Type of stores tracker can track
 const (
 	AppStore TrackingType = iota
 	GooglePlay
 )
 
+// Account represent user account in external mobile api
 type Account struct {
 	Login    string
 	Password string
@@ -28,6 +30,7 @@ type Account struct {
 	Device   string
 }
 
+// Convert Account to *charts.Account
 func (a Account) ForGrpc() *charts.Account {
 	var p *charts.Proxy
 	if a.Proxy != nil {
@@ -44,6 +47,7 @@ func (a Account) ForGrpc() *charts.Account {
 	}
 }
 
+// Fill fields from *charts.Account
 func (a *Account) Fill(account *charts.Account) {
 	a.Login = account.Login
 	a.Password = account.Password
@@ -58,11 +62,14 @@ func (a *Account) Fill(account *charts.Account) {
 	a.Device = account.Device
 }
 
+// Proxy represents proxy object
 type Proxy struct {
 	Http  string
 	Https string
 }
 
+// Construct new Proxy struct by proxy string
+// proxy string must be like http(or https)://*****:*****@ipaddress:port
 func NewProxy(proxy string) *Proxy {
 	p := strings.Split(proxy, "//")
 
@@ -72,6 +79,7 @@ func NewProxy(proxy string) *Proxy {
 	}
 }
 
+// Convert Proxy to *charts.Proxy
 func (p Proxy) ForGrpc() *charts.Proxy {
 	return &charts.Proxy{
 		Http:  p.Http,
@@ -79,6 +87,7 @@ func (p Proxy) ForGrpc() *charts.Proxy {
 	}
 }
 
+// Fill *Proxy from *charts.Proxy
 func (p *Proxy) Fill(proxy *charts.Proxy) {
 	p.Http = proxy.Http
 	p.Https = proxy.Https
@@ -94,7 +103,7 @@ type DBConfig struct {
 	Schema   string `yaml:"schema"`
 }
 
-// Api config
+// ApiConfig
 type ApiConfig struct {
 	Url         string `yaml:"url"`
 	Key         string `yaml:"key"`
@@ -103,7 +112,7 @@ type ApiConfig struct {
 	GrpcAccount Account
 }
 
-// Main config
+// Main config AppConfig
 type AppConfig struct {
 	Bundle    string        `yaml:"bundle"`
 	Period    int           `yaml:"period"`
@@ -116,7 +125,7 @@ type AppConfig struct {
 	OnlyMeta   bool
 }
 
-//Application config
+// Config struct of application config
 type Config struct {
 	Api      ApiConfig `yaml:"api"`
 	Database DBConfig  `yaml:"database"`
@@ -125,7 +134,7 @@ type Config struct {
 	Envs []string `yaml:",flow"`
 }
 
-// Print application full config
+// View print full config
 func (c Config) View() {
 	log.Print("____START")
 	log.Print("Environments: ", c.Envs)
@@ -169,9 +178,8 @@ func (c Config) View() {
 	log.Print("____END")
 }
 
-/**
-Load system environment variables from given array
-*/
+// ladEnvs load system envs from given array of keys and returns
+// map of sysenv key : value
 func loadEnvs(e ...string) map[string]string {
 	envs := make(map[string]string)
 
@@ -182,7 +190,7 @@ func loadEnvs(e ...string) map[string]string {
 	return envs
 }
 
-//Create new instance of app config with given path
+// New Create new instance of app config with given path to (..config..).yml
 func New(p ...string) Config {
 	path := "./dev.yml"
 	if len(p) > 0 {

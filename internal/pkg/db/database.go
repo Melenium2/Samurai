@@ -32,6 +32,7 @@ type TrackingDatabase struct {
 	category Inserter
 }
 
+// Insert new data to database. The table is selected by the passed data type
 func (t *TrackingDatabase) Insert(ctx context.Context, data interface{}) (int, error) {
 	switch v := data.(type) {
 	case App:
@@ -50,6 +51,7 @@ func (t *TrackingDatabase) Insert(ctx context.Context, data interface{}) (int, e
 	return 0, ErrWrongDataType
 }
 
+// Like Insert but with pgx.Tx transaction
 func (t *TrackingDatabase) InsertTx(tx pgx.Tx, ctx context.Context, data interface{}) (int, error) {
 	switch v := data.(type) {
 	case App:
@@ -68,6 +70,7 @@ func (t *TrackingDatabase) InsertTx(tx pgx.Tx, ctx context.Context, data interfa
 	return 0, ErrWrongDataType
 }
 
+// Creates new *TrackingDatabase by given config.DBConfig
 func NewWithConfig(config config.DBConfig) *TrackingDatabase {
 	url, err := ConnectionUrl(config)
 	if err != nil {
@@ -81,6 +84,7 @@ func NewWithConfig(config config.DBConfig) *TrackingDatabase {
 	return NewWithConnection(conn)
 }
 
+// Creates new *TrackingDatabase by given *pgx.Conn connection
 func NewWithConnection(db *pgx.Conn) *TrackingDatabase {
 	return New(
 		NewAppTracking(db),
@@ -90,6 +94,7 @@ func NewWithConnection(db *pgx.Conn) *TrackingDatabase {
 	)
 }
 
+// Creates new *TrackingDatabase by given interfaces
 func New(app Getter, meta Inserter, keys Inserter, cats Inserter) *TrackingDatabase {
 	return &TrackingDatabase{
 		app, meta, keys, cats,

@@ -11,10 +11,12 @@ type ExternalApi interface {
 	Flow(key string) ([]models.App, error)
 }
 
+// Interface who provide access to application by models.Category
 type ChartApi interface {
 	Charts(ctx context.Context, chart models.Category) ([]string, error)
 }
 
+// Requester interface provide access to both ExternalApi and ChartApi
 type Requester interface {
 	ChartApi
 	ExternalApi

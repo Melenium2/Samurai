@@ -23,7 +23,7 @@ type GrpcContext struct {
 	Period  int32
 }
 
-// Update timeout if user renews wanna connect longer
+// Update timeout if user renews connection
 func (gctx *GrpcContext) Update() {
 	gctx.Timeout.Store(gctx.Period)
 }
@@ -41,7 +41,7 @@ func (gctx *GrpcContext) Destroy() {
 	gctx.Timeout.Store(0)
 }
 
-// WakeUp connection or just return connection
+// WakeUp connection or return connection if already exists
 func (gctx *GrpcContext) WakeUp() (*grpc.ClientConn, error) {
 	if gctx.Conn != nil {
 		gctx.Update()

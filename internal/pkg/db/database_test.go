@@ -36,7 +36,7 @@ func (i inserter_mock) InsertTx(tx pgx.Tx, ctx context.Context, data interface{}
 }
 
 func TestTrackingDatabaseNew_ShouldCreateInstanceByConnAndConfig_NoError(t *testing.T) {
-	c := config.New()
+	c := config.New("../../../config/dev.yml")
 	repo := db.NewWithConfig(c.Database)
 
 	app := NewApp()

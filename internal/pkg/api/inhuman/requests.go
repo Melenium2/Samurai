@@ -11,8 +11,7 @@ import (
 )
 
 
-// Make request to API to the given endpoint and return data to the pointer
-// or error
+// Make Request to API to the given endpoint and options
 func Request(endpoint, method string, options ...RequestOption) error {
 	opt := defaultOptions()
 	for _, o := range options {

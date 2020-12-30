@@ -9,6 +9,7 @@ import (
 	"strings"
 )
 
+// ConnectionUrl creates database connection url by given config.DBConfig
 func ConnectionUrl(config config.DBConfig) (string, error) {
 	url := "postgresql://"
 
@@ -35,6 +36,7 @@ func ConnectionUrl(config config.DBConfig) (string, error) {
 	return url, nil
 }
 
+// Connect connect to database by url
 func Connect(url string) (*pgx.Conn, error) {
 	connect, err := pgx.Connect(context.Background(), url)
 	if err != nil {
@@ -44,6 +46,7 @@ func Connect(url string) (*pgx.Conn, error) {
 	return connect, nil
 }
 
+// InitSchema creates database schema from shemafile string
 func InitSchema(connection *pgx.Conn, schemafile string) error {
 	b, err := ioutil.ReadFile(schemafile)
 	if err != nil {

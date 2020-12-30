@@ -10,6 +10,7 @@ type inhumanApiStore struct {
 	config Config
 }
 
+// App method requests to external api and gets models.App by given string
 func (ias *inhumanApiStore) App(bundle string) (models.App, error) {
 	var app StoreApp
 	err := Request("ios_bundle", "GET", WithQueryParams(map[string]interface{}{
@@ -23,6 +24,7 @@ func (ias *inhumanApiStore) App(bundle string) (models.App, error) {
 	return app.ToModel(), nil
 }
 
+// Flow method request to external api and return []models.App by given term
 func (ias *inhumanApiStore) Flow(key string) ([]models.App, error) {
 	var list []StoreApp
 	err := Request("ios_apps_list", "GET", WithQueryParams(map[string]interface{}{
@@ -43,6 +45,8 @@ func (ias *inhumanApiStore) Flow(key string) ([]models.App, error) {
 	return apps, nil
 }
 
+// Charts method request to external api and return []string which contains
+// bundleid of app. []string contains bundle from given models.Category
 func (ias *inhumanApiStore) Charts(ctx context.Context, chart models.Category) ([]string, error) {
 	cat, subcat := chart.Split()
 	var list []map[string]interface{}

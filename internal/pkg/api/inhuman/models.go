@@ -7,6 +7,7 @@ import (
 	"strings"
 )
 
+// StoreApp represent app bundle from external api
 type StoreApp struct {
 	ID             string              `json:"id,omitempty"`
 	Developer      string              `json:"developer,omitempty"`
@@ -27,6 +28,7 @@ type StoreApp struct {
 	PrivacyPolicy  string              `json:"privacyPolicy,omitempty"`
 }
 
+// Converts StoreApp to models.App
 func (sa StoreApp) ToModel() models.App {
 	screenshots := make([]string, len(sa.Screenshots))
 	i := 0
@@ -101,8 +103,4 @@ type StoreRating struct {
 
 type ContentRating struct {
 	Value string `json:"value,omitempty"`
-}
-
-func CreateFromStore(m StoreApp) models.App {
-	return m.ToModel()
 }

@@ -21,6 +21,7 @@ type Worker interface {
 	Done()
 }
 
+// Samurai implementing Worker
 type Samurai struct {
 	Config config.AppConfig
 
@@ -32,6 +33,8 @@ type Samurai struct {
 	db        db.Tracking
 }
 
+// Work start tracking application for a given period
+// Every Intensity start new cycle
 func (w *Samurai) Work() error {
 	p := w.Config.Period
 	var cancel context.CancelFunc
@@ -58,6 +61,10 @@ func (w *Samurai) Work() error {
 	return nil
 }
 
+// One cycle of tracking
+// Creates new app for tracking if taskId not defined
+// Collect metadata of application and collect information about
+// positions of our app by keywords and categories
 func (w *Samurai) Tick(ctx context.Context) error {
 	roptions := []retry.Option{
 		retry.WithContext(ctx),
@@ -135,6 +142,7 @@ func (w *Samurai) Tick(ctx context.Context) error {
 	return nil
 }
 
+// Insert NewApp to database
 func (w *Samurai) NewApp(ctx context.Context, app models.App) (int, error) {
 	return w.db.Insert(ctx, db.App{
 		Bundle:      app.Bundle,
@@ -147,6 +155,7 @@ func (w *Samurai) NewApp(ctx context.Context, app models.App) (int, error) {
 	})
 }
 
+// Insert new metadata to dataabase
 func (w *Samurai) UpdateMeta(ctx context.Context, app models.App) error {
 	_, err := w.db.Insert(ctx, db.Meta{
 		BundleId:         w.TaskId,
@@ -178,6 +187,7 @@ func (w *Samurai) UpdateMeta(ctx context.Context, app models.App) error {
 	return err
 }
 
+// Insert new position of application to database
 func (w *Samurai) UpdateTrack(ctx context.Context, pos int, t string) error {
 	_, err := w.db.Insert(ctx, db.Track{
 		BundleId: w.TaskId,
@@ -188,11 +198,13 @@ func (w *Samurai) UpdateTrack(ctx context.Context, pos int, t string) error {
 	return err
 }
 
+// Close Worker
 func (w *Samurai) Done() {
 	w.isWorking = false
 	log.Print("Shutdown...")
 }
 
+// bundles return only bundleid of given []models.App
 func (w *Samurai) bundles(apps []models.App) []string {
 	r := make([]string, len(apps))
 	for i := 0; i < len(apps); i++ {
@@ -202,6 +214,7 @@ func (w *Samurai) bundles(apps []models.App) []string {
 	return r
 }
 
+// position return position of string in given slice
 func (w *Samurai) position(find string, values []string) int {
 	lfind := strings.ToLower(find)
 	for i, k := range values {

@@ -13,6 +13,8 @@ func (c Categories) Get() []string {
 	return c
 }
 
+// CategoriesGoogle this is Collection which contains available
+// to request categories
 var CategoriesGoogle = Categories{
 	"apps_topselling_free",
 	"apps_topgrossing",
@@ -20,6 +22,7 @@ var CategoriesGoogle = Categories{
 	"apps_topselling_paid",
 }
 
+// CategoriesIos Collection which contains available to request categories
 var CategoriesIos = Categories {
 	"newapplications",
 	"newfreeapplications",

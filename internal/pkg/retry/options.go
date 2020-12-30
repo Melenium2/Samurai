@@ -12,6 +12,7 @@ var (
 	defaultMaxRetryTime         = time.Second * 10
 )
 
+// Interface represents Retry options
 type Option interface {
 	apply(*retryOptions)
 }
@@ -42,42 +43,50 @@ func defaultOptions() retryOptions {
 	}
 }
 
+// Configure max attempts
 func WithMaxAttempts(num int) Option {
 	return newFuncOptions(func(opt *retryOptions) {
 		opt.backoff.maxAttempts = uint(num)
 	})
 }
 
+
+// Configure first attempt
 func WithAttempts(num int) Option {
 	return newFuncOptions(func(opt *retryOptions) {
 		opt.backoff.attemptNum = uint(num)
 	})
 }
 
+// Configure factor for exponential backoff
 func WithFactor(num float64) Option {
 	return newFuncOptions(func(opt *retryOptions) {
 		opt.backoff.factor = num
 	})
 }
 
+// Configure max retry time
 func WithMaxRetryTime(t time.Duration) Option {
 	return newFuncOptions(func(opt *retryOptions) {
 		opt.backoff.maxRetryTime = t
 	})
 }
 
+// Configure retry intensity
 func WithRetryIntensity(t time.Duration) Option {
 	return newFuncOptions(func(opt *retryOptions) {
 		opt.backoff.intensity = t
 	})
 }
 
+// Pass context
 func WithContext(ctx context.Context) Option {
 	return newFuncOptions(func(opt *retryOptions) {
 		opt.ctx = ctx
 	})
 }
 
+// Use linear backoff
 func WithLinearFunc() Option {
 	return newFuncOptions(func(opt *retryOptions) {
 		opt.backoff.isLinear = true

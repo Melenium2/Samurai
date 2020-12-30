@@ -14,7 +14,7 @@ import (
 )
 
 func RealDb() (*pgx.Conn, func(names ...string)) {
-	c := config.New()
+	c := config.New("../../../config/dev.yml")
 	url, err := db.ConnectionUrl(c.Database)
 	if err != nil {
 		panic(err)

@@ -6,6 +6,7 @@ import (
 	"time"
 )
 
+// struct represent implementation of exponential and linear backoff
 type backoff struct {
 	maxAttempts  uint
 	attemptNum   uint
@@ -16,14 +17,18 @@ type backoff struct {
 	isLinear     bool
 }
 
+// IsEnd check if count of attempts more then max
 func (b *backoff) IsEnd() bool {
 	return b.attemptNum > b.maxAttempts
 }
 
+// Next attempt
 func (b *backoff) Next() {
 	b.attemptNum++
 }
 
+// Calculate linear of exponential NextDelay.
+//Base on factor, intensity and attempts
 func (b *backoff) NextDelay() time.Duration {
 	if b.isLinear {
 		b.timeNow = time.Duration(float64(b.intensity) * float64(b.attemptNum))
@@ -51,19 +56,23 @@ func (b *backoff) NextDelay() time.Duration {
 	return b.timeNow
 }
 
+// Return AttemptNow
 func (b *backoff) AttemptNow() int {
 	return int(b.attemptNum)
 }
 
+// Return TimeNow
 func (b *backoff) TimeNow() time.Duration {
 	return b.timeNow
 }
 
+// Reset backoff
 func (b *backoff) Reset() {
 	b.attemptNum = 0
 	b.timeNow = 0
 }
 
+// Creates NewBackoff
 func NewBackoff(maxAttempts uint, factor float64, maxRetryTime, intensity time.Duration, isLinear ...bool) *backoff {
 	linear := false
 	if len(isLinear) > 0 {
