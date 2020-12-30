@@ -10,6 +10,7 @@ import (
 	"time"
 )
 
+// Command for start gp tracker
 var gpTool = &cobra.Command{
 	Use:   "google",
 	Short: "Tool for tracking google play apps",
@@ -29,6 +30,7 @@ var gpTool = &cobra.Command{
 	},
 }
 
+// Init cli flags for configure gp tracker
 func init() {
 	rootCmd.AddCommand(gpTool)
 	gpTool.PersistentFlags().StringVarP(&bundle, "target", "t", "", "Target bundle for tracking")
