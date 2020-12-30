@@ -20,6 +20,10 @@ import (
 	"time"
 )
 
+// Create config for tracking tools
+// Config same with both gp and store
+// Just need to provide config.TrackingType. Because you need to set
+// different categories for tracking, store and gp have different categories
 func loadConfig(trackingType config.TrackingType) config.Config {
 	configPath := "./config/dev.yml"
 	if PRODUCTION {
@@ -65,9 +69,7 @@ func loadConfig(trackingType config.TrackingType) config.Config {
 		}
 	}
 
-	if keyFile == "" && keywords == "" {
-		log.Fatal(ErrNotConfigured("empty keywords"))
-	} else {
+	if keyFile != "" || keywords != "" {
 		var splited []string
 		if keyFile != "" {
 			b, err := ioutil.ReadFile(keyFile)
@@ -102,7 +104,10 @@ func loadConfig(trackingType config.TrackingType) config.Config {
 	return c
 }
 
-func loadTracker(c config.Config, a api.Requester) *executor.Samurai {
+// Method the same for gp and store trackers.
+// loadTracker configure db with config.Config, then creating logger and executor.Worker.
+// method return configured instance of executor.Worker
+func loadTracker(c config.Config, a api.Requester) executor.Worker {
 	conn, err := connection(c.Database)
 	if err != nil {
 		log.Fatal(err)

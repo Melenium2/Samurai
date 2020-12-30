@@ -9,6 +9,7 @@ import (
 	"time"
 )
 
+// Cobra command for starting appstore tracking tool
 var storeTool = &cobra.Command{
 	Use:   "store",
 	Short: "Tool for tracking app store apps",
@@ -28,6 +29,7 @@ var storeTool = &cobra.Command{
 	},
 }
 
+// Method configure flags for command
 func init() {
 	rootCmd.AddCommand(storeTool)
 	storeTool.PersistentFlags().StringVarP(&bundle, "target", "t", "", "Target bundle for tracking")
