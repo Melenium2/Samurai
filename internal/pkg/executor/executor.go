@@ -90,41 +90,43 @@ func (w *Samurai) Tick(ctx context.Context) error {
 		return err
 	}
 
-	for _, k := range w.Config.Keywords {
-		var keys []models.App
-		err = retry.Go(func() error {
-			keys, err = w.api.Flow(k)
-			return err
-		}, roptions...)
-
-		if err != nil {
-			w.logger.Log("error in flow", fmt.Sprintf("keyword '%s' response with: %s", k, err))
-			continue
-		}
-
-		bundles := w.bundles(keys)
-		pos := w.position(w.Config.Bundle, bundles)
-		if err = w.UpdateTrack(ctx, pos, k); err != nil {
-			return err
-		}
-	}
-
-	appCategories := strings.Split(app.Categories, ", ")
-	for _, subCat := range w.Config.Categories.Get() {
-		for _, category := range appCategories {
-			cat := models.NewCategory(category, subCat)
-			var chart []string
+	if !w.Config.OnlyMeta {
+		for _, k := range w.Config.Keywords {
+			var keys []models.App
 			err = retry.Go(func() error {
-				chart, err = w.api.Charts(ctx, cat)
+				keys, err = w.api.Flow(k)
 				return err
 			}, roptions...)
 
 			if err != nil {
+				w.logger.Log("error in flow", fmt.Sprintf("keyword '%s' response with: %s", k, err))
+				continue
+			}
+
+			bundles := w.bundles(keys)
+			pos := w.position(w.Config.Bundle, bundles)
+			if err = w.UpdateTrack(ctx, pos, k); err != nil {
 				return err
 			}
-			pos := w.position(w.Config.Bundle, chart)
-			if err = w.UpdateTrack(ctx, pos, string(cat)); err != nil {
-				return err
+		}
+
+		appCategories := strings.Split(app.Categories, ", ")
+		for _, subCat := range w.Config.Categories.Get() {
+			for _, category := range appCategories {
+				cat := models.NewCategory(category, subCat)
+				var chart []string
+				err = retry.Go(func() error {
+					chart, err = w.api.Charts(ctx, cat)
+					return err
+				}, roptions...)
+
+				if err != nil {
+					return err
+				}
+				pos := w.position(w.Config.Bundle, chart)
+				if err = w.UpdateTrack(ctx, pos, string(cat)); err != nil {
+					return err
+				}
 			}
 		}
 	}

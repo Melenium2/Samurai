@@ -28,6 +28,7 @@ var (
 	keyFile    string
 	itemsCount int
 	force      bool
+	onlyMeta   bool
 )
 
 // Root cobra command. With use pattern 'samurai'

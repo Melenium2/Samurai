@@ -50,4 +50,5 @@ func init() {
 	gpTool.PersistentFlags().StringVarP(&keywords, "keywords", "k", "", "keywords for tracking separated by commas")
 	gpTool.PersistentFlags().StringVarP(&keyFile, "file", "f", "", "file with keywords separated by '\n'")
 	gpTool.PersistentFlags().BoolVar(&force, "force", false, "force a new tracking instance")
+	gpTool.PersistentFlags().BoolVar(&onlyMeta, "meta", false, "track only meta information")
 }

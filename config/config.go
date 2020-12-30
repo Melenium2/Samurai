@@ -113,6 +113,7 @@ type AppConfig struct {
 	// Keywords or application request count from external api
 	ItemsCount int `yaml:"count"`
 	Categories models.Collection
+	OnlyMeta   bool
 }
 
 //Application config
