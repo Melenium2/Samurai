@@ -37,23 +37,16 @@ type Samurai struct {
 // Every Intensity start new cycle
 func (w *Samurai) Work() error {
 	p := w.Config.Period
-	var cancel context.CancelFunc
-	var ctxWithTimeout context.Context
 	for w.isWorking && p > 0 {
 		// Why? Because DB clear ctx after transaction
-		ctxWithTimeout, cancel = context.WithTimeout(w.ctx, time.Minute*6)
-
-		if err := w.Tick(ctxWithTimeout); err != nil {
-			cancel()
+		ctx := context.Background()
+		if err := w.Tick(ctx); err != nil {
 			return err
 		}
 
 		p--
 		w.logger.LogMany(logus.NewLUnit("Work()", "process"), logus.NewLUnit(p, "times left"))
 		time.Sleep(w.Config.Intensity)
-	}
-	if cancel != nil {
-		cancel()
 	}
 
 	w.Done()
@@ -81,6 +74,7 @@ func (w *Samurai) Tick(ctx context.Context) error {
 	}, roptions...)
 
 	if err != nil {
+		w.logger.Log("errors in app", err)
 		return err
 	}
 
