@@ -7,8 +7,8 @@ import (
 
 // Representation of Requester interface
 type ApiImpl struct {
-	chart  ChartApi
-	common ExternalApi
+	chart      ChartApi
+	common     ExternalApi
 }
 
 // Gets []string (apps) by models.Category
@@ -35,5 +35,6 @@ func New(chart ChartApi, common ExternalApi) *ApiImpl {
 func NewRequester(requester Requester) *ApiImpl {
 	chart := requester.(ChartApi)
 	common := requester.(ExternalApi)
+
 	return New(chart, common)
 }

@@ -4,6 +4,7 @@ api:
   key: "Security 3923cf9a417e73be95b40dc5db60c97dcb876a61"
   grpc_address: <address>
   grpc_port: <port>
+  image_processing: http://localhost:11111
 database:
   name: tracking
   user: postgres

@@ -58,19 +58,19 @@ type mock_api struct {
 }
 
 func (m mock_api) Charts(ctx context.Context, chart models.Category) ([]string, error) {
-	return []string {"bundle1", "com.app", "bundle2"}, nil
+	return []string{"bundle1", "com.app", "bundle2"}, nil
 }
 
 func (m mock_api) App(bundle string) (models.App, error) {
 	return models.App{
-		Bundle: "com.app",
+		Bundle:      "com.app",
 		Description: "123",
-		Categories: "GAME_RACING",
+		Categories:  "GAME_RACING",
 	}, nil
 }
 
 func (m mock_api) Flow(key string) ([]models.App, error) {
-	return []models.App { {Bundle: "com.app" }, {Bundle: "bundle1"}, {Bundle: "bundle2" } }, nil
+	return []models.App{{Bundle: "com.app"}, {Bundle: "bundle1"}, {Bundle: "bundle2"}}, nil
 }
 
 func TestSamurai_NewApp_ShouldInsertNewAppToDb_NoError(t *testing.T) {
@@ -78,7 +78,7 @@ func TestSamurai_NewApp_ShouldInsertNewAppToDb_NoError(t *testing.T) {
 		Period: 30,
 		Lang:   "ru_RU",
 	}
-	ex := executor.New(c, logus.NewEmptyLogger(), mock_api{}, &mock_repo{appdb: make(map[int]db.App)})
+	ex := executor.New(c, logus.NewEmptyLogger(), mock_api{}, nil, &mock_repo{appdb: make(map[int]db.App)})
 
 	id, err := ex.NewApp(context.Background(), models.App{Bundle: "123"})
 	assert.NoError(t, err)
@@ -91,7 +91,7 @@ func TestSamurai_UpdateMeta_ShouldInsertNewMetaInfoToDb_NoError(t *testing.T) {
 		Lang:   "ru_RU",
 	}
 	repo := &mock_repo{metadb: make(map[int]db.Meta)}
-	ex := executor.New(c, logus.NewEmptyLogger(), mock_api{}, repo)
+	ex := executor.New(c, logus.NewEmptyLogger(), mock_api{}, nil, repo)
 	ex.TaskId = 1
 
 	err := ex.UpdateMeta(context.Background(), models.App{Description: "123"})
@@ -107,7 +107,7 @@ func TestSamurai_UpdateTrack_ShouldInsertNewTrackInfoAsKeywordToDb_NoError(t *te
 		Lang:   "ru_RU",
 	}
 	repo := &mock_repo{keydb: make(map[int]db.Track)}
-	ex := executor.New(c, logus.NewEmptyLogger(), mock_api{}, repo)
+	ex := executor.New(c, logus.NewEmptyLogger(), mock_api{}, nil, repo)
 	ex.TaskId = 1
 
 	err := ex.UpdateTrack(context.Background(), 50, "key")
@@ -130,7 +130,7 @@ func TestSamurai_Tick_ShouldDoAllWorkOnce_NoError(t *testing.T) {
 		categorydb: make(map[int]db.Track),
 		keydb:      make(map[int]db.Track),
 	}
-	ex := executor.New(c, logus.NewEmptyLogger(), mock_api{}, repo)
+	ex := executor.New(c, logus.NewEmptyLogger(), mock_api{}, nil, repo)
 
 	err := ex.Tick(context.Background())
 	assert.NoError(t, err)
@@ -157,11 +157,11 @@ func TestSamurai_Tick_ShouldDoAllWorkOnce_NoError(t *testing.T) {
 
 func TestSamurai_Work_ShouldDoAllWork3Times_NoError(t *testing.T) {
 	c := config.AppConfig{
-		Bundle:   "com.app",
-		Period:   3,
+		Bundle:    "com.app",
+		Period:    3,
 		Intensity: time.Second * 1,
-		Lang:     "ru_RU",
-		Keywords: []string{"1", "2", "3"},
+		Lang:      "ru_RU",
+		Keywords:  []string{"1", "2", "3"},
 	}
 	repo := &mock_repo{
 		appdb:      make(map[int]db.App),
@@ -169,7 +169,7 @@ func TestSamurai_Work_ShouldDoAllWork3Times_NoError(t *testing.T) {
 		categorydb: make(map[int]db.Track),
 		keydb:      make(map[int]db.Track),
 	}
-	ex := executor.New(c, logus.NewEmptyLogger(), mock_api{}, repo)
+	ex := executor.New(c, logus.NewEmptyLogger(), mock_api{}, nil, repo)
 
 	err := ex.Work()
 	assert.NoError(t, err)
@@ -197,11 +197,11 @@ func TestSamurai_Work_ShouldDoAllWork3Times_NoError(t *testing.T) {
 
 func TestSamurai_Done_ShouldStopAfterFirstIteration_NoError(t *testing.T) {
 	c := config.AppConfig{
-		Bundle:   "com.app",
-		Period:   5,
+		Bundle:    "com.app",
+		Period:    5,
 		Intensity: time.Second * 1,
-		Lang:     "ru_RU",
-		Keywords: []string{"1", "2", "3"},
+		Lang:      "ru_RU",
+		Keywords:  []string{"1", "2", "3"},
 	}
 	repo := &mock_repo{
 		appdb:      make(map[int]db.App),
@@ -209,7 +209,7 @@ func TestSamurai_Done_ShouldStopAfterFirstIteration_NoError(t *testing.T) {
 		categorydb: make(map[int]db.Track),
 		keydb:      make(map[int]db.Track),
 	}
-	ex := executor.New(c, logus.NewEmptyLogger(), mock_api{}, repo)
+	ex := executor.New(c, logus.NewEmptyLogger(), mock_api{}, nil, repo)
 
 	go func() {
 		time.Sleep(time.Second * 1)
@@ -238,8 +238,7 @@ func TestSamurai_NewApp_ShouldInsertNewRowToDb_NoError(t *testing.T) {
 	c.App.Lang = "ru_RU"
 	c.App.Period = 30
 
-	ex := executor.NewDefault(c, logus.NewEmptyLogger())
-
+	ex := executor.NewDefault(c, logus.NewEmptyLogger(), nil)
 
 	id, err := ex.NewApp(context.Background(), models.App{
 		Bundle: "com.com.com",
@@ -267,7 +266,7 @@ func TestSamurai_NewApp_ShouldntInsertRowCozContextEmpty_NoError(t *testing.T) {
 	c.App.Lang = "ru_RU"
 	c.App.Period = 30
 
-	ex := executor.New(c.App, logus.NewEmptyLogger(), mock_api{}, db.NewAppTracking(DatabaseConnection(c.Database)))
+	ex := executor.New(c.App, logus.NewEmptyLogger(), mock_api{}, nil, db.NewAppTracking(DatabaseConnection(c.Database)))
 
 	assert.Panics(t, func() {
 		ex.NewApp(nil, models.App{
@@ -283,10 +282,10 @@ func TestSamurai_UpdateMeta_ShouldInsertNewRow_NoError(t *testing.T) {
 
 	conn := DatabaseConnection(c.Database)
 	tr := db.NewWithConnection(conn)
-	ex := executor.New(c.App, logus.NewEmptyLogger(), mock_api{}, tr)
+	ex := executor.New(c.App, logus.NewEmptyLogger(), mock_api{}, nil, tr)
 
 	app := models.App{
-		Bundle: "com.com.com",
+		Bundle:      "com.com.com",
 		Description: "123",
 	}
 	ctx := context.Background()
@@ -315,10 +314,10 @@ func TestSamurai_UpdateTrack_ShouldInsertNewKeywordsAndCategories(t *testing.T) 
 
 	conn := DatabaseConnection(c.Database)
 	tr := db.NewWithConnection(conn)
-	ex := executor.New(c.App, logus.NewEmptyLogger(), mock_api{}, tr)
+	ex := executor.New(c.App, logus.NewEmptyLogger(), mock_api{}, nil, tr)
 
 	app := models.App{
-		Bundle: "com.com.com",
+		Bundle:      "com.com.com",
 		Description: "123",
 	}
 	ctx := context.Background()
@@ -340,7 +339,7 @@ func TestSamurai_UpdateTrack_ShouldInsertNewKeywordsAndCategories(t *testing.T) 
 	assert.NoError(t, row.Scan(&cat))
 	assert.Equal(t, "finance_apps_top_selling_hello", cat)
 
-	_,  err = conn.Exec(context.Background(), "truncate table app_tracking, keyword_tracking, category_tracking cascade")
+	_, err = conn.Exec(context.Background(), "truncate table app_tracking, keyword_tracking, category_tracking cascade")
 	if err != nil {
 		panic(err)
 	}
@@ -351,13 +350,13 @@ func TestSamurai_Tick_ShouldDoneOnTickOnlyDb(t *testing.T) {
 	c.App.Lang = "ru_RU"
 	c.App.Period = 30
 	c.App.Bundle = "com.app"
-	c.App.Keywords = []string {"key1", "key2", "key3"}
+	c.App.Keywords = []string{"key1", "key2", "key3"}
 
 	conn := DatabaseConnection(c.Database)
 	tr := db.NewWithConnection(conn)
-	ex := executor.New(c.App, logus.NewEmptyLogger(), mock_api{}, tr)
+	ex := executor.New(c.App, logus.NewEmptyLogger(), mock_api{}, nil, tr)
 
-	ctx, _ := context.WithTimeout(context.Background(), time.Second * 120)
+	ctx, _ := context.WithTimeout(context.Background(), time.Second*120)
 
 	assert.NoError(t, ex.Tick(ctx))
 	assert.Greater(t, ex.TaskId, 0)
@@ -408,7 +407,7 @@ func TestSamurai_Tick_ShouldDoneOnTick(t *testing.T) {
 	c.App.Intensity = time.Hour
 	c.App.Period = 1
 	c.App.Bundle = "com.duolingo"
-	c.App.Keywords = []string {"translate", "lingo", "english"}
+	c.App.Keywords = []string{"translate", "lingo", "english"}
 	c.App.ItemsCount = 250
 
 	conn := DatabaseConnection(c.Database)
@@ -420,20 +419,20 @@ func TestSamurai_Tick_ShouldDoneOnTick(t *testing.T) {
 		Login:    "markovskiiikhiura@gmail.com",
 		Password: "k4kdffz9m",
 		Locale:   "ru_RU",
-		Proxy:    &config.Proxy{
+		Proxy: &config.Proxy{
 			Http:  "http://5AHKey:mPNZg8@45.11.127.53:8000",
 			Https: "https://5AHKey:mPNZg8@45.11.127.53:8000",
 		},
-		Device:   "whyred",
+		Device: "whyred",
 	}
 	request := api.New(
 		mobilerpc.New(mobilerpc.FromConfig(c)),
 		inhuman.NewApiPlay(inhuman.FromConfig(c)),
 	)
 
-	ex := executor.New(c.App, logus.NewEmptyLogger(), request, tr)
+	ex := executor.New(c.App, logus.NewEmptyLogger(), request, nil, tr)
 
-	ctx, _ := context.WithTimeout(context.Background(), time.Second * 120)
+	ctx, _ := context.WithTimeout(context.Background(), time.Second*120)
 
 	assert.NoError(t, ex.Tick(ctx))
 	assert.Greater(t, ex.TaskId, 0)
@@ -480,7 +479,7 @@ func TestSamurai_Tick_ShouldDoneOnTick(t *testing.T) {
 
 func TestSamurai_NewApp_ShouldInsertNewIosAppToDb(t *testing.T) {
 	c := config.New("../../../config/dev.yml")
-	k := []string {"game", "sub", "way", "сабвей", "метро"}
+	k := []string{"game", "sub", "way", "сабвей", "метро"}
 	c.App.Lang = "ru_RU"
 	c.App.Intensity = time.Hour
 	c.App.Period = 1
@@ -496,9 +495,9 @@ func TestSamurai_NewApp_ShouldInsertNewIosAppToDb(t *testing.T) {
 		inhuman.NewApiStore(inhuman.FromConfig(c)),
 	)
 
-	ex := executor.New(c.App, logus.NewEmptyLogger(), req, tr)
+	ex := executor.New(c.App, logus.NewEmptyLogger(), req, nil, tr)
 
-	ctx, _ := context.WithTimeout(context.Background(), time.Second * 120)
+	ctx, _ := context.WithTimeout(context.Background(), time.Second*120)
 
 	assert.NoError(t, ex.Tick(ctx))
 	assert.Greater(t, ex.TaskId, 0)
@@ -535,14 +534,10 @@ func TestSamurai_NewApp_ShouldInsertNewIosAppToDb(t *testing.T) {
 		cats = append(cats, c)
 	}
 	rows.Close()
-	assert.Equal(t, len(c.App.Categories.Get()) * 4, len(cats))
+	assert.Equal(t, len(c.App.Categories.Get())*4, len(cats))
 
 	_, err = conn.Exec(context.Background(), "truncate table app_tracking, keyword_tracking, meta_tracking, category_tracking cascade")
 	if err != nil {
 		panic(err)
 	}
 }
-
-
-
-
