@@ -2,10 +2,12 @@ package imgprocess_test
 
 import (
 	"Samurai/config"
+	"Samurai/internal/pkg/api"
 	"Samurai/internal/pkg/api/imgprocess"
 	"Samurai/internal/pkg/api/inhuman"
 	"context"
 	"github.com/stretchr/testify/assert"
+	"strings"
 	"testing"
 )
 
@@ -101,71 +103,70 @@ func TestImageProcessing_ProcessWithGooglePlay_ShouldReturnModelWithNewPictureAn
 	imgapi := imgprocess.New("http://localhost:11111")
 	ctx := context.Background()
 	c := config.New("../../../../config/dev.yml")
-	conf := inhuman.Config{
-		Url:        c.Api.Url,
-		Key:        c.Api.Key,
-		Hl:         "ru",
-		Gl:         "ru",
-		ItemsCount: 250,
+
+	var tt = []struct {
+		appApi api.ExternalApi
+		bundle string
+	}{
+		{
+			appApi: inhuman.NewApiPlay( inhuman.Config{
+				Url:        c.Api.Url,
+				Key:        c.Api.Key,
+				Hl:         "ru",
+				Gl:         "ru",
+				ItemsCount: 250,
+			}),
+			bundle: "com.orcacorp.wargame",
+		},
+		{
+			appApi: inhuman.NewApiStore(inhuman.Config{
+				Url:        c.Api.Url,
+				Key:        c.Api.Key,
+				Hl:         "de",
+				Gl:         "de",
+				ItemsCount: 200,
+			}),
+			bundle: "1504417378",
+		},
 	}
-	appapi := inhuman.NewApiPlay(conf)
-	res, err := appapi.App("com.orcacorp.wargame")
-	assert.NoError(t, err)
-	assert.NotNil(t, res)
 
-	picture := res.Picture
-	screenshots := make([]string, len(res.Screenshots))
-	copy(screenshots, res.Screenshots)
+	for _, test := range tt {
+		res, err := test.appApi.App(test.bundle)
+		assert.NoError(t, err)
+		assert.NotNil(t, res)
 
-	pic, err := imgapi.Process(ctx, []string{picture})
-	assert.NoError(t, err)
-	assert.NotNil(t, pic)
-	res.Picture = pic[0]
+		picture := res.Picture
+		var screenshots []string
+		for _, v := range res.Screenshots {
+			screenshots = append(screenshots, v.Screens...)
+		}
 
-	assert.NotEqual(t, picture, res.Picture )
+		pic, err := imgapi.Process(ctx, []string{picture})
+		assert.NoError(t, err)
+		assert.NotNil(t, pic)
+		res.Picture = pic[0]
 
-	mpic, err := imgapi.Process(ctx, res.Screenshots)
-	assert.NoError(t, err)
-	assert.NotNil(t, mpic)
-	res.Screenshots = mpic
+		assert.NotEqual(t, picture, res.Picture)
 
-	assert.Equal(t, len(screenshots), len(res.Screenshots))
-	assert.NotEqual(t, screenshots, res.Screenshots)
-}
+		mpic, err := imgapi.Process(ctx, screenshots)
+		assert.NoError(t, err)
+		assert.NotNil(t, mpic)
 
-// Not working yet
-func TestImageProcessing_ProcessWithAppStore_ShouldReturnModelWithNewPictureAndScreenshots(t *testing.T) {
-	imgapi := imgprocess.New("http://localhost:11111")
-	ctx := context.Background()
-	c := config.New("../../../../config/dev.yml")
-	conf := inhuman.Config{
-		Url:        c.Api.Url,
-		Key:        c.Api.Key,
-		Hl:         "de",
-		Gl:         "de",
-		ItemsCount: 200,
+		index := 0
+		length := 0
+		for _, v := range res.Screenshots {
+			for i := range v.Screens {
+				v.Screens[i] = mpic[index]
+				index++
+
+				assert.False(t, strings.Contains(v.Screens[i], "http"))
+			}
+			length += len(v.Screens)
+		}
+
+		assert.Equal(t, len(screenshots), length)
+		assert.NotEqual(t, screenshots, mpic)
+
+		t.Log(res.Screenshots)
 	}
-	appapi := inhuman.NewApiStore(conf)
-	res, err := appapi.App("1504417378")
-	assert.NoError(t, err)
-	assert.NotNil(t, res)
-
-	picture := res.Picture
-	screenshots := make([]string, len(res.Screenshots))
-	copy(screenshots, res.Screenshots)
-
-	pic, err := imgapi.Process(ctx, []string{picture})
-	assert.NoError(t, err)
-	assert.NotNil(t, pic)
-	res.Picture = pic[0]
-
-	assert.NotEqual(t, picture, res.Picture)
-
-	mpic, err := imgapi.Process(ctx, res.Screenshots)
-	assert.NoError(t, err)
-	assert.NotNil(t, mpic)
-	res.Screenshots = mpic
-
-	assert.Equal(t, len(screenshots), len(res.Screenshots))
-	assert.NotEqual(t, screenshots, res.Screenshots)
 }

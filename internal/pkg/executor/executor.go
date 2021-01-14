@@ -10,6 +10,7 @@ import (
 	"Samurai/internal/pkg/logus"
 	"Samurai/internal/pkg/retry"
 	"context"
+	"encoding/json"
 	"fmt"
 	"log"
 	"strings"
@@ -159,12 +160,20 @@ func (w *Samurai) NewApp(ctx context.Context, app models.App) (int, error) {
 
 // Insert new metadata to dataabase
 func (w *Samurai) UpdateMeta(ctx context.Context, app models.App) error {
+	screenshots := make([]string, len(app.Screenshots))
+	i := 0
+	for _, v := range app.Screenshots {
+		b, _ := json.Marshal(v)
+		screenshots[i] = string(b)
+		i++
+	}
+
 	_, err := w.db.Insert(ctx, db.Meta{
 		BundleId:         w.TaskId,
 		Title:            app.Title,
 		Price:            app.Price,
 		Picture:          app.Picture,
-		Screenshots:      app.Screenshots,
+		Screenshots:      screenshots,
 		Rating:           app.Rating,
 		ReviewCount:      app.ReviewCount,
 		RatingHistogram:  app.RatingHistogram,
@@ -231,9 +240,9 @@ func (w *Samurai) position(find string, values []string) int {
 // replaceImages replaces images in the app bundle with a url of the remote resource
 func (w *Samurai) replaceImages(ctx context.Context, app *models.App, roptions ...retry.Option) error {
 	var err error
-	var images []string
 	// Replace logo
 	{
+		var images []string
 		err = retry.Go(func() error {
 			images, err = w.imgProcessing.Process(ctx, []string{app.Picture})
 			return err
@@ -246,13 +255,24 @@ func (w *Samurai) replaceImages(ctx context.Context, app *models.App, roptions .
 	}
 	// Replace screenshots
 	{
+		var preparedScreenshots []string
+		for _, v := range app.Screenshots {
+			preparedScreenshots = append(preparedScreenshots, v.Screens...)
+		}
 		err = retry.Go(func() error {
-			app.Screenshots, err = w.imgProcessing.Process(ctx, app.Screenshots)
+			preparedScreenshots, err = w.imgProcessing.Process(ctx, preparedScreenshots)
 			return err
 		}, roptions...)
 		if err != nil {
 			w.logger.Log("errors in replace image - screenshots: ", err)
 			return err
+		}
+		index := 0
+		for _, v := range app.Screenshots {
+			for i := range v.Screens {
+				v.Screens[i] = preparedScreenshots[index]
+				index++
+			}
 		}
 	}
 	return nil

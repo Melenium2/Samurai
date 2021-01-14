@@ -1,7 +1,7 @@
 package imgprocess
 
 import (
-	"Samurai/internal/pkg/api/inhuman"
+	"Samurai/internal/pkg/api/request"
 	"context"
 	"errors"
 	"log"
@@ -35,9 +35,9 @@ func (i *ImageProcessing) single(ctx context.Context, image string) (string, err
 	var imgstruct = &struct{
 		Filename string `json:"filename,omitempty"`
 	}{}
-	err := inhuman.Request("load", "get", inhuman.WithQueryParams(map[string]interface{}{
+	err := request.Request("load", "get", request.WithQueryParams(map[string]interface{}{
 		"link": image,
-	}), inhuman.WithResponseType(&imgstruct), inhuman.WithUrl(i.apiurl))
+	}), request.WithResponseType(&imgstruct), request.WithUrl(i.apiurl))
 	if err != nil {
 		return "", err
 	}
@@ -54,8 +54,8 @@ func (i *ImageProcessing) single(ctx context.Context, image string) (string, err
 
 func (i *ImageProcessing) batch(ctx context.Context, images []string) ([]string, error) {
 	var imgs map[string]string
-	err := inhuman.Request("load/batch", "post",
-		inhuman.WithData(images), inhuman.WithResponseType(&imgs), inhuman.WithUrl(i.apiurl))
+	err := request.Request("load/batch", "post",
+		request.WithData(images), request.WithResponseType(&imgs), request.WithUrl(i.apiurl))
 	if err != nil {
 		return nil, err
 	}

@@ -24,6 +24,8 @@ func TestInhumanApiStore_App_ShouldReturnInstanceOfAppWithoutError(t *testing.T)
 	assert.NoError(t, err)
 	assert.NotNil(t, app)
 	assert.Equal(t, bundle, app.Bundle)
+
+	t.Log(app.Screenshots)
 }
 
 func TestInhumanApiStore_Flow_ShouldReturnListOfAppsFromMainPage(t *testing.T) {

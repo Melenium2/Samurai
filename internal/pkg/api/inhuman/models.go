@@ -2,7 +2,6 @@ package inhuman
 
 import (
 	"Samurai/internal/pkg/api/models"
-	"encoding/json"
 	"fmt"
 	"strings"
 )
@@ -30,18 +29,14 @@ type StoreApp struct {
 
 // Converts StoreApp to models.App
 func (sa StoreApp) ToModel() models.App {
-	screenshots := make([]string, len(sa.Screenshots))
+	screenshots := make([]models.Screenshots, len(sa.Screenshots))
 	i := 0
 	for k, v := range sa.Screenshots {
-		s := map[string]interface{}{
-			"Device":      k,
-			"Screenshots": v,
+		s := models.Screenshots{
+			Device:  k,
+			Screens: v,
 		}
-		b, err := json.Marshal(s)
-		if err != nil {
-			panic(err)
-		}
-		screenshots[i] = string(b)
+		screenshots[i] = s
 		i++
 	}
 

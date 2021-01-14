@@ -1,4 +1,4 @@
-package inhuman
+package request
 
 // requestOptions struct contains request options
 type requestOptions struct {
