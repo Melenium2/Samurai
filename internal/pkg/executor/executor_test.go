@@ -3,6 +3,7 @@ package executor_test
 import (
 	"Samurai/config"
 	"Samurai/internal/pkg/api"
+	"Samurai/internal/pkg/api/imgprocess"
 	"Samurai/internal/pkg/api/inhuman"
 	"Samurai/internal/pkg/api/mobilerpc"
 	"Samurai/internal/pkg/api/models"
@@ -124,6 +125,7 @@ func TestSamurai_Tick_ShouldDoAllWorkOnce_NoError(t *testing.T) {
 		Lang:     "ru_RU",
 		Keywords: []string{"1", "2", "3"},
 	}
+	c.Categories = models.CategoriesGoogle
 	repo := &mock_repo{
 		appdb:      make(map[int]db.App),
 		metadb:     make(map[int]db.Meta),
@@ -162,6 +164,7 @@ func TestSamurai_Work_ShouldDoAllWork3Times_NoError(t *testing.T) {
 		Intensity: time.Second * 1,
 		Lang:      "ru_RU",
 		Keywords:  []string{"1", "2", "3"},
+		Categories: models.CategoriesGoogle,
 	}
 	repo := &mock_repo{
 		appdb:      make(map[int]db.App),
@@ -202,6 +205,7 @@ func TestSamurai_Done_ShouldStopAfterFirstIteration_NoError(t *testing.T) {
 		Intensity: time.Second * 1,
 		Lang:      "ru_RU",
 		Keywords:  []string{"1", "2", "3"},
+		Categories: models.CategoriesGoogle,
 	}
 	repo := &mock_repo{
 		appdb:      make(map[int]db.App),
@@ -327,7 +331,7 @@ func TestSamurai_UpdateTrack_ShouldInsertNewKeywordsAndCategories(t *testing.T) 
 	ex.TaskId = id
 
 	assert.NoError(t, ex.UpdateTrack(ctx, 50, "key"))
-	assert.NoError(t, ex.UpdateTrack(ctx, 50, "finance_apps_top_selling_hello"))
+	assert.NoError(t, ex.UpdateTrack(ctx, 50, "finance|apps_top_selling_hello"))
 
 	row := conn.QueryRow(ctx, "select type from keyword_tracking where bundleid = $1", id)
 	var key string
@@ -337,7 +341,7 @@ func TestSamurai_UpdateTrack_ShouldInsertNewKeywordsAndCategories(t *testing.T) 
 	row = conn.QueryRow(ctx, "select type from category_tracking where bundleid = $1", id)
 	var cat string
 	assert.NoError(t, row.Scan(&cat))
-	assert.Equal(t, "finance_apps_top_selling_hello", cat)
+	assert.Equal(t, "finance|apps_top_selling_hello", cat)
 
 	_, err = conn.Exec(context.Background(), "truncate table app_tracking, keyword_tracking, category_tracking cascade")
 	if err != nil {
@@ -409,6 +413,7 @@ func TestSamurai_Tick_ShouldDoneOnTick(t *testing.T) {
 	c.App.Bundle = "com.duolingo"
 	c.App.Keywords = []string{"translate", "lingo", "english"}
 	c.App.ItemsCount = 250
+	c.App.OnlyMeta = true
 
 	conn := DatabaseConnection(c.Database)
 	tr := db.NewWithConnection(conn)
@@ -430,7 +435,7 @@ func TestSamurai_Tick_ShouldDoneOnTick(t *testing.T) {
 		inhuman.NewApiPlay(inhuman.FromConfig(c)),
 	)
 
-	ex := executor.New(c.App, logus.NewEmptyLogger(), request, nil, tr)
+	ex := executor.New(c.App, logus.NewEmptyLogger(), request, imgprocess.New(c.Api.ImageProcessing), tr)
 
 	ctx, _ := context.WithTimeout(context.Background(), time.Second*120)
 
@@ -447,31 +452,33 @@ func TestSamurai_Tick_ShouldDoneOnTick(t *testing.T) {
 	assert.NoError(t, row.Scan(&desc))
 	assert.NotEmpty(t, desc)
 
-	rows, err := conn.Query(context.Background(), "select type from keyword_tracking where bundleid = $1", ex.TaskId)
-	assert.NoError(t, err)
+	if !c.App.OnlyMeta {
+		rows, err := conn.Query(context.Background(), "select type from keyword_tracking where bundleid = $1", ex.TaskId)
+		assert.NoError(t, err)
 
-	var keywords []string
-	for rows.Next() {
-		var k string
-		assert.NoError(t, rows.Scan(&k))
-		keywords = append(keywords, k)
+		var keywords []string
+		for rows.Next() {
+			var k string
+			assert.NoError(t, rows.Scan(&k))
+			keywords = append(keywords, k)
+		}
+		rows.Close()
+		assert.Equal(t, 3, len(keywords))
+
+		rows, err = conn.Query(context.Background(), "select type from category_tracking where bundleid = $1", ex.TaskId)
+		assert.NoError(t, err)
+
+		var cats []string
+		for rows.Next() {
+			var c string
+			assert.NoError(t, rows.Scan(&c))
+			cats = append(cats, c)
+		}
+		rows.Close()
+		assert.Equal(t, 4, len(cats))
 	}
-	rows.Close()
-	assert.Equal(t, 3, len(keywords))
 
-	rows, err = conn.Query(context.Background(), "select type from category_tracking where bundleid = $1", ex.TaskId)
-	assert.NoError(t, err)
-
-	var cats []string
-	for rows.Next() {
-		var c string
-		assert.NoError(t, rows.Scan(&c))
-		cats = append(cats, c)
-	}
-	rows.Close()
-	assert.Equal(t, 4, len(cats))
-
-	_, err = conn.Exec(context.Background(), "truncate table app_tracking, keyword_tracking, meta_tracking, category_tracking cascade")
+	_, err := conn.Exec(context.Background(), "truncate table app_tracking, keyword_tracking, meta_tracking, category_tracking cascade")
 	if err != nil {
 		panic(err)
 	}
@@ -495,7 +502,7 @@ func TestSamurai_NewApp_ShouldInsertNewIosAppToDb(t *testing.T) {
 		inhuman.NewApiStore(inhuman.FromConfig(c)),
 	)
 
-	ex := executor.New(c.App, logus.NewEmptyLogger(), req, nil, tr)
+	ex := executor.New(c.App, logus.NewEmptyLogger(), req, imgprocess.New(c.Api.ImageProcessing), tr)
 
 	ctx, _ := context.WithTimeout(context.Background(), time.Second*120)
 
