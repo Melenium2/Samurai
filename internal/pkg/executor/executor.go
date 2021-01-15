@@ -62,7 +62,7 @@ func (w *Samurai) Work() error {
 func (w *Samurai) Tick(ctx context.Context) error {
 	roptions := []retry.Option{
 		retry.WithContext(ctx),
-		retry.WithFactor(1.6),
+		retry.WithFactor(1.3),
 		retry.WithMaxAttempts(10),
 		retry.WithMaxRetryTime(time.Minute * 2),
 	}
