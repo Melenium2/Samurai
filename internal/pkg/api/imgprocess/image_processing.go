@@ -49,7 +49,7 @@ func (i *ImageProcessing) single(ctx context.Context, image string) (string, err
 		return "", errors.New("response empty")
 	}
 
-	return img, nil
+	return i.apiurl + img, nil
 }
 
 func (i *ImageProcessing) batch(ctx context.Context, images []string) ([]string, error) {
@@ -61,15 +61,14 @@ func (i *ImageProcessing) batch(ctx context.Context, images []string) ([]string,
 	}
 
 	resultImgs := make([]string, len(imgs))
-	index := 0
-	for k, v := range imgs {
-		if !strings.Contains(v, "none") {
-			resultImgs[index] = RemoveExtension(v)
+	for index, v := range images {
+		value := imgs[v]
+		if !strings.Contains(value, "none") {
+			resultImgs[index] = i.apiurl + RemoveExtension(value)
 		} else {
-			log.Printf("can not porcess image with url %s, use fallback solution", k)
-			resultImgs[index] = k
+			log.Printf("can not porcess image with url %s, use fallback solution", v)
+			resultImgs[index] = v
 		}
-		index++
 	}
 
 	return resultImgs, nil
