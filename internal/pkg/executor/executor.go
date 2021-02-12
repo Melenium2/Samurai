@@ -10,6 +10,7 @@ import (
 	"Samurai/internal/pkg/logus"
 	"Samurai/internal/pkg/retry"
 	"context"
+	"encoding/json"
 	"fmt"
 	"log"
 	"strings"
@@ -24,13 +25,14 @@ type Worker interface {
 // Samurai implementing Worker
 type Samurai struct {
 	Config config.AppConfig
+	TaskId int
 
-	TaskId    int
-	isWorking bool
-	logger    logus.Logus
-	ctx       context.Context
-	api       api.Requester
-	db        db.Tracking
+	isWorking     bool
+	logger        logus.Logus
+	ctx           context.Context
+	api           api.Requester
+	imgProcessing api.ImageProcessingApi
+	db            db.Tracking
 }
 
 // Work start tracking application for a given period
@@ -38,7 +40,6 @@ type Samurai struct {
 func (w *Samurai) Work() error {
 	p := w.Config.Period
 	for w.isWorking && p > 0 {
-		// Why? Because DB clear ctx after transaction
 		ctx := context.Background()
 		if err := w.Tick(ctx); err != nil {
 			return err
@@ -61,9 +62,9 @@ func (w *Samurai) Work() error {
 func (w *Samurai) Tick(ctx context.Context) error {
 	roptions := []retry.Option{
 		retry.WithContext(ctx),
-		retry.WithFactor(1.6),
+		retry.WithFactor(1.3),
 		retry.WithMaxAttempts(10),
-		retry.WithMaxRetryTime(time.Minute * 3),
+		retry.WithMaxRetryTime(time.Minute * 2),
 	}
 
 	var app models.App
@@ -74,7 +75,7 @@ func (w *Samurai) Tick(ctx context.Context) error {
 	}, roptions...)
 
 	if err != nil {
-		w.logger.Log("errors in app", err)
+		w.logger.Log("errors in app: ", err)
 		return err
 	}
 
@@ -85,6 +86,13 @@ func (w *Samurai) Tick(ctx context.Context) error {
 		}
 		w.logger.Log("Tick()", "Create new app for tracking")
 		w.TaskId = id
+	}
+
+	if w.imgProcessing != nil {
+		if err = w.replaceImages(ctx, &app, roptions...); err != nil {
+			w.logger.Log("Tick() replace image", err)
+			return err
+		}
 	}
 
 	if err := w.UpdateMeta(ctx, app); err != nil {
@@ -122,6 +130,7 @@ func (w *Samurai) Tick(ctx context.Context) error {
 				}, roptions...)
 
 				if err != nil {
+					w.logger.Log("errors in category: %s: ", fmt.Sprintf("errors in category: %s, error: %s", cat, err))
 					return err
 				}
 				pos := w.position(w.Config.Bundle, chart)
@@ -151,12 +160,20 @@ func (w *Samurai) NewApp(ctx context.Context, app models.App) (int, error) {
 
 // Insert new metadata to dataabase
 func (w *Samurai) UpdateMeta(ctx context.Context, app models.App) error {
+	screenshots := make([]string, len(app.Screenshots))
+	i := 0
+	for _, v := range app.Screenshots {
+		b, _ := json.Marshal(v)
+		screenshots[i] = string(b)
+		i++
+	}
+
 	_, err := w.db.Insert(ctx, db.Meta{
 		BundleId:         w.TaskId,
 		Title:            app.Title,
 		Price:            app.Price,
 		Picture:          app.Picture,
-		Screenshots:      app.Screenshots,
+		Screenshots:      screenshots,
 		Rating:           app.Rating,
 		ReviewCount:      app.ReviewCount,
 		RatingHistogram:  app.RatingHistogram,
@@ -220,23 +237,65 @@ func (w *Samurai) position(find string, values []string) int {
 	return -1
 }
 
-func New(config config.AppConfig, logger logus.Logus, api api.Requester, repo db.Tracking) *Samurai {
+// replaceImages replaces images in the app bundle with a url of the remote resource
+func (w *Samurai) replaceImages(ctx context.Context, app *models.App, roptions ...retry.Option) error {
+	var err error
+	// Replace logo
+	{
+		var images []string
+		err = retry.Go(func() error {
+			images, err = w.imgProcessing.Process(ctx, []string{app.Picture})
+			return err
+		}, roptions...)
+		if err != nil {
+			w.logger.Log("errors in replace image - logo: ", err)
+			return err
+		}
+		app.Picture = images[0]
+	}
+	// Replace screenshots
+	{
+		var preparedScreenshots []string
+		for _, v := range app.Screenshots {
+			preparedScreenshots = append(preparedScreenshots, v.Screens...)
+		}
+		err = retry.Go(func() error {
+			preparedScreenshots, err = w.imgProcessing.Process(ctx, preparedScreenshots)
+			return err
+		}, roptions...)
+		if err != nil {
+			w.logger.Log("errors in replace image - screenshots: ", err)
+			return err
+		}
+		index := 0
+		for _, v := range app.Screenshots {
+			for i := range v.Screens {
+				v.Screens[i] = preparedScreenshots[index]
+				index++
+			}
+		}
+	}
+	return nil
+}
+
+func New(config config.AppConfig, logger logus.Logus, api api.Requester, imgprocess api.ImageProcessingApi, repo db.Tracking) *Samurai {
 	return &Samurai{
-		ctx:       context.Background(),
-		Config:    config,
-		logger:    logger,
-		isWorking: true,
-		api:       api,
-		db:        repo,
+		ctx:           context.Background(),
+		Config:        config,
+		logger:        logger,
+		isWorking:     true,
+		api:           api,
+		imgProcessing: imgprocess,
+		db:            repo,
 	}
 }
 
-func NewDefault(config config.Config, logger logus.Logus) *Samurai {
+func NewDefault(config config.Config, logger logus.Logus, imgprocess api.ImageProcessingApi) *Samurai {
 	requester := api.New(
 		mobilerpc.New(mobilerpc.FromConfig(config)),
 		inhuman.NewApiPlay(inhuman.FromConfig(config)),
 	)
 	repo := db.NewWithConfig(config.Database)
 
-	return New(config.App, logger, requester, repo)
+	return New(config.App, logger, requester, imgprocess, repo)
 }

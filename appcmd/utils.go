@@ -3,6 +3,7 @@ package appcmd
 import (
 	"Samurai/config"
 	"Samurai/internal/pkg/api"
+	"Samurai/internal/pkg/api/imgprocess"
 	"Samurai/internal/pkg/api/models"
 	"Samurai/internal/pkg/db"
 	"Samurai/internal/pkg/executor"
@@ -116,10 +117,17 @@ func loadTracker(c config.Config, a api.Requester) executor.Worker {
 	repository := db.NewWithConnection(conn)
 
 	logger := logus.New(configureLogger())
+
+	var imgproc api.ImageProcessingApi
+	if imgProcessing {
+		imgproc = imgprocess.New(c.Api.ImageProcessing)
+	}
+
 	ex := executor.New(
 		c.App,
 		logger,
 		a,
+		imgproc,
 		repository,
 	)
 

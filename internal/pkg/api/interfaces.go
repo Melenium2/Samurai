@@ -16,6 +16,12 @@ type ChartApi interface {
 	Charts(ctx context.Context, chart models.Category) ([]string, error)
 }
 
+// Interface for uploading images to an external server and getting images
+// filenames from this server
+type ImageProcessingApi interface {
+	Process(ctx context.Context, image []string) ([]string, error)
+}
+
 // Requester interface provide access to both ExternalApi and ChartApi
 type Requester interface {
 	ChartApi

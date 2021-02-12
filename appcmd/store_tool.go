@@ -41,4 +41,6 @@ func init() {
 	storeTool.PersistentFlags().StringVarP(&keywords, "keywords", "k", "", "keywords for tracking separated by commas")
 	storeTool.PersistentFlags().StringVarP(&keyFile, "file", "f", "", "file with keywords separated by '\n'")
 	storeTool.PersistentFlags().BoolVar(&force, "force", false, "force a new tracking instance")
+	storeTool.PersistentFlags().BoolVar(&onlyMeta, "meta", false, "track only meta information")
+	storeTool.PersistentFlags().BoolVar(&imgProcessing, "img", false, "save images to local server collection")
 }

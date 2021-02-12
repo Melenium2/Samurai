@@ -1,22 +1,7 @@
 package models
 
-import (
-	"fmt"
-	"strings"
-)
-
-type Category string
-
-func (c Category) Split() (string, string) {
-	splited := strings.Split(string(c), "|")
-	if len(splited) > 2 {
-		panic("invalid category")
-	}
-	return splited[0], splited[1]
-}
-
-func NewCategory(cat, subcat string) Category {
-	return Category(strings.ToLower(fmt.Sprintf("%s|%s", cat, subcat)))
+type GeneralModel interface {
+	ToModel() App
 }
 
 type App struct {
@@ -27,7 +12,7 @@ type App struct {
 	Categories        string            `json:"categories" db:"categories"`
 	Price             string            `json:"price" db:"price"`
 	Picture           string            `json:"picture" db:"picture"`
-	Screenshots       []string          `json:"screenshots" db:"screenshots"`
+	Screenshots       []Screenshots     `json:"screenshots,omitempty"`
 	Rating            string            `json:"rating" db:"rating"`
 	ReviewCount       string            `json:"reviewCount" db:"review_count"`
 	RatingHistogram   []string          `json:"ratingHistogram" db:"rating_histogram"`
@@ -45,7 +30,47 @@ type App struct {
 	PrivacyPolicy     string            `json:"privacyPolicy,omitempty"`
 }
 
+type GoogleApp struct {
+	App
+	Screenshots []string `json:"screenshots,omitempty"`
+}
+
+func (ga *GoogleApp) ToModel() App {
+	return App{
+		Bundle:      ga.Bundle,
+		DeveloperId: ga.DeveloperId,
+		Developer:   ga.Developer,
+		Title:       ga.Title,
+		Categories:  ga.Categories,
+		Price:       ga.Price,
+		Picture:     ga.Picture,
+		Screenshots: []Screenshots{
+			{Device: "android", Screens: ga.Screenshots},
+		},
+		Rating:            ga.Rating,
+		ReviewCount:       ga.ReviewCount,
+		RatingHistogram:   ga.RatingHistogram,
+		Description:       ga.Description,
+		ShortDescription:  ga.ShortDescription,
+		RecentChanges:     ga.RecentChanges,
+		ReleaseDate:       ga.ReleaseDate,
+		LastUpdateDate:    ga.LastUpdateDate,
+		AppSize:           ga.AppSize,
+		Installs:          ga.Installs,
+		Version:           ga.Version,
+		AndroidVersion:    ga.AndroidVersion,
+		ContentRating:     ga.ContentRating,
+		DeveloperContacts: ga.DeveloperContacts,
+		PrivacyPolicy:     ga.PrivacyPolicy,
+	}
+}
+
 type DeveloperContacts struct {
 	Email    string `json:"email,omitempty"`
 	Contacts string `json:"contacts,omitempty"`
+}
+
+type Screenshots struct {
+	Device  string   `json:"device,omitempty"`
+	Screens []string `json:"screenshots,omitempty"`
 }

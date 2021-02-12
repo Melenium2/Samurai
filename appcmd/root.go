@@ -13,22 +13,23 @@ var ErrNotConfigured = func(value interface{}) error {
 }
 
 var (
-	PRODUCTION bool
-	bundle     string
-	locale     string
-	period     int
-	intensity  time.Duration
-	email      string
-	password   string
-	proxy      string
-	token      string
-	gsfid      int
-	device     string
-	keywords   string
-	keyFile    string
-	itemsCount int
-	force      bool
-	onlyMeta   bool
+	PRODUCTION    bool
+	bundle        string
+	locale        string
+	period        int
+	intensity     time.Duration
+	email         string
+	password      string
+	proxy         string
+	token         string
+	gsfid         int
+	device        string
+	keywords      string
+	keyFile       string
+	itemsCount    int
+	force         bool
+	onlyMeta      bool
+	imgProcessing bool
 )
 
 // Root cobra command. With use pattern 'samurai'
