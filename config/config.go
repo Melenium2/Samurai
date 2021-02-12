@@ -114,15 +114,17 @@ type ApiConfig struct {
 
 // Main config AppConfig
 type AppConfig struct {
-	Bundle    string        `yaml:"bundle"`
-	Period    int           `yaml:"period"`
-	Intensity time.Duration `yaml:"intensity"`
-	Lang      string        `yaml:"lang"`
-	Keywords  []string      `yaml:",flow"`
+	Bundle      string        `yaml:"bundle"`
+	Period      int           `yaml:"period"`
+	Intensity   time.Duration `yaml:"intensity"`
+	Lang        string        `yaml:"lang"`
+	Keywords    []string      `yaml:",flow"`
+	ExternalLog string        `yaml:"external_logger"`
 	// Keywords or application request count from external api
 	ItemsCount int `yaml:"count"`
 	Categories models.Collection
 	OnlyMeta   bool
+
 }
 
 // Config struct of application config

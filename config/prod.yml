@@ -4,6 +4,7 @@ api:
   key:
   grpc_address:
   grpc_port:
+  external_logger: http://146.0.36.96/log
 database:
   name: tracking
   user:

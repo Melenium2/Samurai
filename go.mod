@@ -9,7 +9,6 @@ require (
 	github.com/jackc/pgx/v4 v4.9.2
 	github.com/prometheus/common v0.4.0
 	github.com/spf13/cobra v1.1.1
-	github.com/spf13/viper v1.7.0
 	github.com/stretchr/testify v1.6.1
 	go.uber.org/atomic v1.6.0
 	google.golang.org/grpc v1.33.2
