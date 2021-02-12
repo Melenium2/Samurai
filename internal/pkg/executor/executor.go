@@ -223,6 +223,7 @@ func (w *Samurai) position(find string, values []string) int {
 	return -1
 }
 
+// send log to external system for tg notification
 func (w *Samurai) externalLog(log string) {
 	if w.Config.ExternalLog != "" {
 		w.logger.LogExternal(w.Config.ExternalLog, logus.Log{
