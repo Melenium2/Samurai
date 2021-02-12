@@ -240,7 +240,6 @@ func (w *Samurai) position(find string, values []string) int {
 	return -1
 }
 
-
 // send log to external system for tg notification
 func (w *Samurai) externalLog(log string) {
 	if w.Config.ExternalLog != "" {
@@ -293,7 +292,13 @@ func (w *Samurai) replaceImages(ctx context.Context, app *models.App, roptions .
 	return nil
 }
 
-func New(config config.AppConfig, logger logus.Logus, api api.Requester, imgprocess api.ImageProcessingApi, repo db.Tracking) *Samurai {
+func New(
+	config config.AppConfig,
+	logger logus.Logus,
+	api api.Requester,
+	imgprocess api.ImageProcessingApi,
+	repo db.Tracking,
+) *Samurai {
 	return &Samurai{
 		ctx:           context.Background(),
 		Config:        config,
