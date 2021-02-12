@@ -32,23 +32,15 @@ type Samurai struct {
 // Every Intensity start new cycle
 func (w *Samurai) Work() error {
 	p := w.Config.Period
-	if w.Config.ExternalLog != "" {
-		w.logger.LogExternal(w.Config.ExternalLog, logus.Log{
-			Type:    "error",
-			Module:  "samurai",
-			Message: fmt.Sprintf("noerror. Starting working on bundle = %s lang = %s", w.Config.Bundle, w.Config.Lang),
-		})
-	}
+
+	w.externalLog(fmt.Sprintf("noerror. Starting working on bundle = %s lang = %s", w.Config.Bundle, w.Config.Lang))
 
 	for w.isWorking && p > 0 {
 		// Why? Because DB clear ctx after transaction
 		ctx := context.Background()
 		if err := w.Tick(ctx); err != nil {
-			w.logger.LogExternal(w.Config.ExternalLog, logus.Log{
-				Type:    "error",
-				Module:  "samurai",
-				Message: fmt.Sprintf("Error inside working loop %s", err.Error()),
-			})
+			w.externalLog(fmt.Sprintf("Error inside working loop %s", err.Error()))
+
 			return err
 		}
 
@@ -204,11 +196,7 @@ func (w *Samurai) UpdateTrack(ctx context.Context, pos int, t string) error {
 func (w *Samurai) Done() {
 	w.isWorking = false
 
-	w.logger.LogExternal(w.Config.ExternalLog, logus.Log{
-		Type:    "error",
-		Module:  "samurai",
-		Message: fmt.Sprintf("noerror. Ending  working on bundle = %s lang = %s", w.Config.Bundle, w.Config.Lang),
-	})
+	w.externalLog(fmt.Sprintf("noerror. Ending  working on bundle = %s lang = %s", w.Config.Bundle, w.Config.Lang))
 
 	log.Print("Shutdown...")
 }
@@ -233,6 +221,16 @@ func (w *Samurai) position(find string, values []string) int {
 	}
 
 	return -1
+}
+
+func (w *Samurai) externalLog(log string) {
+	if w.Config.ExternalLog != "" {
+		w.logger.LogExternal(w.Config.ExternalLog, logus.Log{
+			Type:    "error",
+			Module:  "samurai",
+			Message: log,
+		})
+	}
 }
 
 func New(config config.AppConfig, logger logus.Logus, api api.Requester, repo db.Tracking) *Samurai {
