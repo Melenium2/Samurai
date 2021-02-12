@@ -105,11 +105,12 @@ type DBConfig struct {
 
 // ApiConfig
 type ApiConfig struct {
-	Url         string `yaml:"url"`
-	Key         string `yaml:"key"`
-	GrpcAddress string `yaml:"grpc_address"`
-	GrpcPort    string `yaml:"grpc_port"`
-	GrpcAccount Account
+	Url             string `yaml:"url"`
+	Key             string `yaml:"key"`
+	GrpcAddress     string `yaml:"grpc_address"`
+	GrpcPort        string `yaml:"grpc_port"`
+	GrpcAccount     Account
+	ImageProcessing string `yaml:"image_processing"`
 }
 
 // Main config AppConfig
@@ -147,6 +148,7 @@ func (c Config) View() {
 	log.Print("\tApiUrl: ", c.Api.Url)
 	log.Print("\tGrpcPort: ", c.Api.GrpcPort)
 	log.Print("\tGrpcAddress: ", c.Api.GrpcAddress)
+	log.Println("\tImageProcessing: ", c.Api.ImageProcessing)
 
 	log.Print("---------------------------")
 

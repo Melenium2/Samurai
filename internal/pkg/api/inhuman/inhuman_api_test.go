@@ -135,16 +135,21 @@ type inhuman_api_mock_fail struct {
 }
 
 func (m *inhuman_api_mock_fail) Flow(key string) ([]models.App, error) {
-	apps := make([]models.App, 0)
+	list := make([]models.GoogleApp, 0)
 	err := m.Request(m.Endpoint("mainPage"), "post", map[string]interface{} {
 		"query": key,
 		"hl": "13",
 		"gl": "123",
 		"count": 50,
-	}, &apps)
+	}, &list)
 
 	if err != nil {
 		return nil, err
+	}
+
+	apps := make([]models.App, len(list))
+	for i, v := range list {
+		apps[i] = v.ToModel()
 	}
 
 	return apps, nil
@@ -218,9 +223,9 @@ func TestEndpoint_ShouldReturnUnpredictableBody_Error(t *testing.T) {
 		ExpectedCode:         200,
 		ExpectedResponseBody: `{ "bundle": "bundle" }]`,
 	}
-	err := api.Request("/bundle", "get", struct{}{}, &models.App{})
+	err := api.Request("/bundle", "get", struct{}{}, &models.GoogleApp{})
 	assert.Error(t, err)
-	assert.Equal(t, "json: cannot unmarshal string into Go value of type inhuman.App", err.Error())
+	assert.Equal(t, "json: cannot unmarshal string into Go value of type models.GoogleApp", err.Error())
 }
 
 func TestEndpoint_ShouldReturnErrorCozIncorrectData_Error(t *testing.T) {
@@ -308,12 +313,12 @@ func TestApp_ShouldReturnErrorIfBundleIsWrong_Error(t *testing.T) {
 	api := inhuman.NewApiPlay(Config())
 	res, err := api.App("")
 	assert.Error(t, err)
-	assert.Nil(t, res)
+	assert.Empty(t, res.Bundle)
 }
 
 func TestApp_ShouldReturnErrorCozKeyIsIncorrect_Error(t *testing.T) {
 	api := inhuman.NewApiPlay(Config())
 	res, err := api.App("dfghadsvadkasdasdskjdsnkjdna123ad;lmsakda")
 	assert.Error(t, err)
-	assert.Nil(t, res)
+	assert.Empty(t, res.Bundle)
 }

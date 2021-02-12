@@ -1,4 +1,4 @@
-package inhuman
+package request
 
 import (
 	"bytes"

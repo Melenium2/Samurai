@@ -2,6 +2,7 @@ package inhuman
 
 import (
 	"Samurai/internal/pkg/api/models"
+	"Samurai/internal/pkg/api/request"
 	"context"
 	"fmt"
 )
@@ -13,10 +14,10 @@ type inhumanApiStore struct {
 // App method requests to external api and gets models.App by given string
 func (ias *inhumanApiStore) App(bundle string) (models.App, error) {
 	var app StoreApp
-	err := Request("ios_bundle", "GET", WithQueryParams(map[string]interface{}{
+	err := request.Request("ios_bundle", "GET", request.WithQueryParams(map[string]interface{}{
 		"q": bundle,
 		"l": ias.config.Gl,
-	}), WithApikey(ias.config.Key), WithUrl(ias.config.Url), WithResponseType(&app))
+	}), request.WithApikey(ias.config.Key), request.WithUrl(ias.config.Url), request.WithResponseType(&app))
 	if err != nil {
 		return models.App{}, err
 	}
@@ -27,12 +28,12 @@ func (ias *inhumanApiStore) App(bundle string) (models.App, error) {
 // Flow method request to external api and return []models.App by given term
 func (ias *inhumanApiStore) Flow(key string) ([]models.App, error) {
 	var list []StoreApp
-	err := Request("ios_apps_list", "GET", WithQueryParams(map[string]interface{}{
+	err := request.Request("ios_apps_list", "GET", request.WithQueryParams(map[string]interface{}{
 		"q":    key,
 		"o":    ias.config.ItemsCount,
 		"lang": ias.config.Hl,
 		"geo":  ias.config.Gl,
-	}), WithApikey(ias.config.Key), WithUrl(ias.config.Url), WithResponseType(&list))
+	}), request.WithApikey(ias.config.Key), request.WithUrl(ias.config.Url), request.WithResponseType(&list))
 	if err != nil {
 		return nil, err
 	}
@@ -50,12 +51,12 @@ func (ias *inhumanApiStore) Flow(key string) ([]models.App, error) {
 func (ias *inhumanApiStore) Charts(ctx context.Context, chart models.Category) ([]string, error) {
 	cat, subcat := chart.Split()
 	var list []map[string]interface{}
-	err := Request("ios/collections", "POST", WithData(map[string]interface{}{
+	err := request.Request("ios/collections", "POST", request.WithData(map[string]interface{}{
 		"cat":     cat,
 		"subCat":  subcat,
 		"count":   ias.config.ItemsCount,
 		"country": ias.config.Gl,
-	}), WithUrl(ias.config.Url), WithApikey(ias.config.Key), WithResponseType(&list))
+	}), request.WithUrl(ias.config.Url), request.WithApikey(ias.config.Key), request.WithResponseType(&list))
 	if err != nil {
 		return nil, err
 	}
