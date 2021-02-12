@@ -17,11 +17,6 @@ import (
 	"time"
 )
 
-type Worker interface {
-	Work() error
-	Done()
-}
-
 // Samurai implementing Worker
 type Samurai struct {
 	Config config.AppConfig
@@ -39,9 +34,14 @@ type Samurai struct {
 // Every Intensity start new cycle
 func (w *Samurai) Work() error {
 	p := w.Config.Period
+
+	w.externalLog(fmt.Sprintf("noerror. Starting working on bundle = %s lang = %s", w.Config.Bundle, w.Config.Lang))
+
 	for w.isWorking && p > 0 {
 		ctx := context.Background()
 		if err := w.Tick(ctx); err != nil {
+			w.externalLog(fmt.Sprintf("Error inside working loop %s", err.Error()))
+
 			return err
 		}
 
@@ -212,6 +212,9 @@ func (w *Samurai) UpdateTrack(ctx context.Context, pos int, t string) error {
 // Close Worker
 func (w *Samurai) Done() {
 	w.isWorking = false
+
+	w.externalLog(fmt.Sprintf("noerror. Ending  working on bundle = %s lang = %s", w.Config.Bundle, w.Config.Lang))
+
 	log.Print("Shutdown...")
 }
 
@@ -235,6 +238,18 @@ func (w *Samurai) position(find string, values []string) int {
 	}
 
 	return -1
+}
+
+
+// send log to external system for tg notification
+func (w *Samurai) externalLog(log string) {
+	if w.Config.ExternalLog != "" {
+		w.logger.LogExternal(w.Config.ExternalLog, logus.Log{
+			Type:    "error",
+			Module:  "samurai",
+			Message: log,
+		})
+	}
 }
 
 // replaceImages replaces images in the app bundle with a url of the remote resource
