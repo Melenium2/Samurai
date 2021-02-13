@@ -125,7 +125,6 @@ type AppConfig struct {
 	ItemsCount int `yaml:"count"`
 	Categories models.Collection
 	OnlyMeta   bool
-
 }
 
 // Config struct of application config
