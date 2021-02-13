@@ -1,5 +1,5 @@
 # Samurai
-Tracker unit
+Bot for scrapping information about application from Google Play or AppStore.
 
     /|
                           /'||
@@ -58,3 +58,10 @@ Tracker unit
                    ""==%%%%%%%$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$SV"
                                $$$$$$$$$$$$$$$$$$$$====""""
                                  """""""""~~~~
+## Config
+
+This app works in two modes.
+
+### Google Play Tool
+
+This mode scrap information from google play and has few params
