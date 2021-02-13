@@ -24,8 +24,9 @@ ENV appname=Samurai
 RUN git clone ${github}
 RUN make -C $appname deploy
 RUN ls .
-RUN cp -r ./$appname/config/prod.yml /go/bin/prod.yml
-RUN cp -r ./$appname/config/schema.sql /go/bin/schema.sql
+RUN mkdir /go/bin/config
+RUN cp -r ./$appname/config/prod.yml /go/bin/config/prod.yml
+RUN cp -r ./$appname/config/schema.sql /go/bin/config/schema.sql
 #
 RUN rm /go/bin/$appname
 #
@@ -44,13 +45,6 @@ USER appuser:appuser
 
 WORKDIR /go/bin
 
-CMD [
-    "/go/bin/main",
-    "-proxy", "http://STqthJ:2odx6V@45.132.21.233:8000"
-    "-bundle", "ru.alfabank.mobile.android"
-    "-email", "ceciliamcalistervugt93@gmail.com",
-    "-pass", "Hbibcxzauig"
-    "-keys", "bank, банк, русский банк"
-]
+ENTRYPOINT ["/go/bin/main"]
 
 

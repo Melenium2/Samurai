@@ -1,10 +1,13 @@
 version: '3.7'
 services:
-    samurai:
+    n26:
         build: .
-        container_name: samurai
+        command: ""
+        container_name: n26
         environment:
             - production=true
-            - api_key=${API_KEY}
-            - db_pass=${DB_PASS}
-            - db_user=${DB_USER}
+            - api_key=<>
+            - db_pass=<>
+            - db_user=<>
+            - grpc_address=<>
+            - grpc_port=<>
