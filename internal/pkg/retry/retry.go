@@ -24,6 +24,7 @@ func Go(retryFunc RetryFunc, options ...Option) error {
 		err := retryFunc()
 
 		if err != nil {
+			log.Printf("error occures %s\n", err)
 			errorsLog = append(errorsLog, err)
 
 			delay := opt.backoff.NextDelay()
