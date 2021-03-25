@@ -50,6 +50,7 @@ func loadConfig(trackingType config.TrackingType) config.Config {
 	c.Database.Schema = "./config/schema.sql"
 	c.App.ItemsCount = itemsCount
 	c.App.OnlyMeta = onlyMeta
+	c.App.SkipCategories = skipCategories
 
 	{
 		if c.Api.GrpcAddress == "" || strings.ContainsAny(c.Api.GrpcAddress, "<>") {

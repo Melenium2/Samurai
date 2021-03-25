@@ -51,5 +51,6 @@ func init() {
 	gpTool.PersistentFlags().StringVarP(&keyFile, "file", "f", "", "file with keywords separated by '\n'")
 	gpTool.PersistentFlags().BoolVar(&force, "force", false, "force a new tracking instance")
 	gpTool.PersistentFlags().BoolVar(&onlyMeta, "meta", false, "track only meta information")
+	gpTool.PersistentFlags().BoolVar(&skipCategories, "skip-cat", false, "skip parsing categories")
 	gpTool.PersistentFlags().BoolVar(&imgProcessing, "img", false, "save images to local server collection")
 }

@@ -93,7 +93,7 @@ func (p *Proxy) Fill(proxy *charts.Proxy) {
 	p.Https = proxy.Https
 }
 
-//Database config
+// Database config
 type DBConfig struct {
 	Database string `yaml:"name"`
 	User     string `yaml:"user"`
@@ -122,9 +122,10 @@ type AppConfig struct {
 	Keywords    []string      `yaml:",flow"`
 	ExternalLog string        `yaml:"external_logger"`
 	// Keywords or application request count from external api
-	ItemsCount int `yaml:"count"`
-	Categories models.Collection
-	OnlyMeta   bool
+	ItemsCount     int `yaml:"count"`
+	Categories     models.Collection
+	OnlyMeta       bool
+	SkipCategories bool
 }
 
 // Config struct of application config
